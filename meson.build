@@ -15,7 +15,7 @@ fun_opt = [
   'warning_level=3',
   'c_std=c99'
 ]
-fun_lib = library('fun', fun_src, override_options: fun_opt, dependencies: [ cc.find_library('m', required: false) ])
+fun_lib = static_library('fun', fun_src, override_options: fun_opt, dependencies: [ cc.find_library('m', required: false) ])
 fun_dep = [
   declare_dependency(link_with: fun_lib, include_directories: fun_inc),
 ]
