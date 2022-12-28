@@ -47,3 +47,14 @@ if 'opengl' in get_option('demos') or 'all' in get_option('demos')
   executable('opengl-cube', 'opengl/cube.c', dependencies: opengl_dep, override_options: fun_opt)
 endif
 
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Vulkan
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+if 'vulkan' in get_option('demos') or 'all' in get_option('demos')
+  vulkan_dep = [
+    fun_dep,
+    dependency('sdl2'),
+    dependency('Vulkan'),
+  ]
+  executable('vulkan-cube', 'vulkan/cube.c', dependencies: vulkan_dep, override_options: fun_opt)
+endif

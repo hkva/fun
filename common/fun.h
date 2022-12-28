@@ -26,6 +26,7 @@
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #define FUN_ASSERT(cond) assert(cond)
+#define FUN_ARRLEN(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // Platform-specific stuff
