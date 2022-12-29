@@ -42,7 +42,7 @@ if 'opengl' in get_option('demos') or 'all' in get_option('demos')
   opengl_dep = [
     fun_dep,
     dependency('glew'),
-    dependency('sdl2'),
+    dependency('sdl2', default_options: [ 'test=false' ]),
   ]
   executable('opengl-cube', 'opengl/cube.c', dependencies: opengl_dep, override_options: fun_opt)
 endif
@@ -53,7 +53,7 @@ endif
 if 'vulkan' in get_option('demos') or 'all' in get_option('demos')
   vulkan_dep = [
     fun_dep,
-    dependency('sdl2', default_options: [ 'use_video_vulkan=enabled' ]),
+    dependency('sdl2', default_options: [ 'use_video_vulkan=enabled', 'test=false' ]),
     dependency('Vulkan'),
   ]
   executable('vulkan-cube', 'vulkan/cube.c', dependencies: vulkan_dep, override_options: fun_opt)
