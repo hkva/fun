@@ -50,11 +50,11 @@ void fun_mat4_mul(float* restrict dst, const float* restrict l, const float* res
 void fun_mat4_perspective(float* restrict m, float fovy_rad, float aspect, float z_near, float z_far) {
     memset(m, 0, sizeof(float) * 4 * 4);
     const float fov_inv = 1.0f / tanf(fovy_rad);
-    m[0*4+0]= fov_inv / aspect;
-    m[1*4+1]= fov_inv;
-    m[2*4+2]= -(z_far + z_near) / (z_far - z_near);
-    m[2*4+3]= -1.0f;
-    m[3*4+2]= -2.0f * (z_far * z_near) / (z_far - z_near);
+    m[0*4+0] = fov_inv / aspect;
+    m[1*4+1] = fov_inv;
+    m[2*4+2] = -(z_far + z_near) / (z_far - z_near);
+    m[2*4+3] = -1.0f;
+    m[3*4+2] = -2.0f * (z_far * z_near) / (z_far - z_near);
 }
 
 void fun_mat4_rotate(float* restrict m, float rad, float x, float y, float z) {
@@ -65,5 +65,16 @@ void fun_mat4_rotate(float* restrict m, float rad, float x, float y, float z) {
     m[1*4+0]=x*y*c2-z*s;    m[1*4+1]=y*y*c2+c;      m[1*4+2]=y*z*c2+x*s;    m[1*4+3]=0.0f;
     m[2*4+0]=x*z*c2+y*s;    m[2*4+1]=y*z*c2-x*s;    m[2*4+2]=z*z*c2+c;      m[2*4+3]=0.0f;
     m[3*4+0]=0.0f;          m[3*4+1]=0.0f;          m[3*4+2]=0.0f;          m[3*4+3]=1.0f;
+}
+
+void fun_mat4_orthographic(float* restrict m, float l, float r, float t, float b, float n, float f) {
+    memset(m, 0, sizeof(float) * 4 * 4);
+    m[0*4+0] = 2.0f / (r - l);
+    m[3*4+0] = -(r + l) / (r - l);
+    m[1*4+1] = 2.0f / (t - b);
+    m[3*4+1] = -(t + b) / (t - b);
+    m[2*4+2] = -2.0f / (f - n);
+    m[3*4+2] = -(f + n) / (f - n);
+    m[3*4+3] = 1.0f;
 }
 

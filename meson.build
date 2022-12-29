@@ -36,6 +36,18 @@ if 'ffmpeg' in get_option('demos') or 'all' in get_option('demos')
 endif
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Games
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+if 'games' in get_option('demos') or 'all' in get_option('demos')
+  games_dep = [
+    fun_dep,
+    dependency('glew'),
+    dependency('sdl2', default_options: [ 'test=false' ]),
+  ]
+  executable('games-test', 'games/test.c', dependencies: games_dep, override_options: fun_opt)
+endif
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # OpenGL
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 if 'opengl' in get_option('demos') or 'all' in get_option('demos')

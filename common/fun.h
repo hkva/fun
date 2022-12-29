@@ -21,6 +21,7 @@
 #include <math.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,6 +32,7 @@
 
 #define FUN_ASSERT(cond) assert(cond)
 #define FUN_ARRLEN(arr) (sizeof(arr) / sizeof((arr)[0]))
+#define FUN_ZERO(var)   memset(&var, 0, sizeof(var))
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // Platform-specific stuff
@@ -52,5 +54,6 @@ void fun_mat4_ident(float* restrict m);
 void fun_mat4_mul(float* restrict dst, const float* restrict l, const float* restrict r);
 void fun_mat4_perspective(float* restrict m, float fovy_rad, float aspect, float z_near, float z_far);
 void fun_mat4_rotate(float* restrict m, float rad, float x, float y, float z);
+void fun_mat4_orthographic(float* restrict m, float l, float r, float t, float b, float n, float f);
 
 #endif // _FUN_H_
