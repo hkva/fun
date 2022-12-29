@@ -53,7 +53,7 @@ endif
 if 'vulkan' in get_option('demos') or 'all' in get_option('demos')
   vulkan_dep = [
     fun_dep,
-    dependency('sdl2'),
+    dependency('sdl2', default_options: [ 'use_video_vulkan=enabled' ]),
     dependency('Vulkan'),
   ]
   executable('vulkan-cube', 'vulkan/cube.c', dependencies: vulkan_dep, override_options: fun_opt)
