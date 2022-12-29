@@ -8,6 +8,10 @@
     // Subtract specific annoying warnings from -Wall
     #pragma GCC diagnostic ignored "-Wunused-parameter"
 #endif
+#ifdef _MSC_VER
+    // Same with MSVC
+    #pragma warning(disable: 4100)
+#endif
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // Other headers

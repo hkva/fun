@@ -155,7 +155,7 @@ int main(int argc, char* argv[]) {
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(CUBE_VERTICES), CUBE_VERTICES, GL_STATIC_DRAW);
     // Set vertex layout
-    const size_t VERTEX_SIZE = sizeof(float) * (3 + 3 + 2);
+    const GLsizei VERTEX_SIZE = sizeof(float) * (3 + 3 + 2);
     // vec3 position
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, VERTEX_SIZE, (void*)(sizeof(float) * 0));
     glEnableVertexAttribArray(0);
@@ -255,4 +255,6 @@ int main(int argc, char* argv[]) {
 
     SDL_DestroyWindow(wnd);
     SDL_Quit();
+
+    return 0;
 }
