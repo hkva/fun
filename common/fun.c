@@ -1,8 +1,43 @@
 #include "fun.h"
 
+#include "spng.h"
+
+#ifdef FUN_LINUX
+    #include <unistd.h>
+#endif
+
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // Platform-specific stuff
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+static char* _fun_strdup(const char* str) {
+    char* r = malloc(strlen(str)+1); FUN_ASSERT(r);
+    strcpy(r, str);
+    return r;
+}
+
+char* fun_basename(const char* path) {
+    char* result = _fun_strdup(path); FUN_ASSERT(result);
+    char* last_delim = NULL;
+    for (size_t i = 0; result[i] != '\0'; ++i) {
+        if ((result[i] == '/' || result[i] == '\\') && result[i+1]!= '\0') {
+            last_delim = &result[i];
+        }
+    }
+    if (last_delim) {
+        *last_delim = '\0';
+    }
+    return result;
+}
+
+void fun_chdir(const char* path) {
+    fun_msg("fun_chdir(): Changing to %s", path);
+#ifdef FUN_LINUX
+    if (chdir(path) == -1) {
+        fun_msg("chdir() failed");
+    }
+#endif
+}
 
 void fun_err(const char* fmt, ...) {
     static char buf[512];
@@ -77,4 +112,73 @@ void fun_mat4_orthographic(float* restrict m, float l, float r, float t, float b
     m[3*4+2] = -(f + n) / (f - n);
     m[3*4+3] = 1.0f;
 }
+
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// IO
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+uint8_t* fun_load_binary_file(const char* path, size_t* length_out) {
+    FILE* f = fopen(path, "rb");
+    if (!f) {
+        fun_msg("File not found");
+        return NULL;
+    }
+    fseek(f, 0, SEEK_END);
+    size_t length = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    if (length_out) {
+        *length_out = length;
+    }
+    uint8_t* result = malloc(length); FUN_ASSERT(result);
+    fread(result, 1, length, f);
+    fclose(f);
+    return result;
+}
+
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// Image parsing
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+bool fun_image_from_file(Fun_Image* restrict out, const char* path) {
+    size_t      file_len = 0;
+    uint8_t*    file_contents = NULL;
+    if ((file_contents = fun_load_binary_file(path, &file_len)) == NULL || !file_len) {
+        return false;
+    }
+    bool parsed = fun_image_from_memory(out, file_contents, file_len);
+    free(file_contents);
+    return parsed;
+}
+
+bool fun_image_from_memory(Fun_Image* restrict out, const uint8_t* buffer, size_t buffer_length) {
+    spng_ctx* spng = spng_ctx_new(0); FUN_ASSERT(spng);
+    spng_set_crc_action(spng, SPNG_CRC_USE, SPNG_CRC_USE);
+    spng_set_png_buffer(spng, buffer, buffer_length);
+    // Read header
+    struct spng_ihdr hdr = { 0 };
+    if (spng_get_ihdr(spng, &hdr) != 0) {
+        fun_msg("Invalid PNG header\n");
+        return false;
+    }
+
+    // Allocate output
+    size_t data_len = sizeof(uint32_t) * hdr.width * hdr.height;
+    out->width = hdr.width;
+    out->height = hdr.height;
+    out->data = malloc(data_len); FUN_ASSERT(out->data);
+
+    // Decode
+    int r = 0;
+    if ((r = spng_decode_image(spng, out->data, data_len, SPNG_FMT_RGBA8, 0)) != 0) {
+        fun_msg("Maformed PNG file returned %d)", r);
+        return false;
+    }
+
+    return true;
+}
+
+
+
+
+
 

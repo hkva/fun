@@ -12,6 +12,9 @@
     // Same with MSVC
     #pragma warning(disable: 4100)
 #endif
+#ifdef __linux__
+    #define FUN_LINUX
+#endif
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // Other headers
@@ -38,8 +41,10 @@
 // Platform-specific stuff
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-void fun_err(const char* fmt, ...);
-void fun_msg(const char* fmt, ...);
+char*   fun_basename(const char* path);
+void    fun_chdir(const char* path);
+void    fun_err(const char* fmt, ...);
+void    fun_msg(const char* fmt, ...);
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // Math
@@ -55,5 +60,25 @@ void fun_mat4_mul(float* restrict dst, const float* restrict l, const float* res
 void fun_mat4_perspective(float* restrict m, float fovy_rad, float aspect, float z_near, float z_far);
 void fun_mat4_rotate(float* restrict m, float rad, float x, float y, float z);
 void fun_mat4_orthographic(float* restrict m, float l, float r, float t, float b, float n, float f);
+
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// IO
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+uint8_t* fun_load_binary_file(const char* path, size_t* length);
+
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// Image parsing
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+// RGBA8 image
+typedef struct Fun_Image {
+    int         width;
+    int         height;
+    uint32_t*   data;
+} Fun_Image;
+
+bool fun_image_from_file(Fun_Image* restrict out, const char* path);
+bool fun_image_from_memory(Fun_Image* restrict out, const uint8_t* buffer, size_t buffer_length);
 
 #endif // _FUN_H_

@@ -55,7 +55,7 @@ typedef struct E_Image {
 typedef unsigned int E_Texture;
 
 enum {
-    E_TEXTURE_BAD = (E_Texture)-1,
+    E_TEXTURE_BAD = -1,
 };
 
 E_Texture e_create_texture(const E_Image* img);

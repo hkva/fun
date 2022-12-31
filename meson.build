@@ -1,4 +1,4 @@
-project('fun', ['c'], license: 'MIT', version: '0.1')
+project('fun', ['c'], license: 'MIT', version: '0.1', default_options: [ 'buildtype=release', 'strip=true' ])
 
 cc = meson.get_compiler('c')
 
@@ -15,7 +15,10 @@ fun_opt = [
   'warning_level=3',
   'c_std=c99'
 ]
-fun_lib = static_library('fun', fun_src, override_options: fun_opt, dependencies: [ cc.find_library('m', required: false) ])
+fun_dep_dep = [
+  dependency('spng'),
+]
+fun_lib = static_library('fun', fun_src, override_options: fun_opt, dependencies: fun_dep_dep + [ cc.find_library('m', required: false) ])
 fun_dep = [
   declare_dependency(link_with: fun_lib, include_directories: fun_inc),
 ]
@@ -58,6 +61,7 @@ if 'opengl' in get_option('demos') or 'all' in get_option('demos')
     dependency('sdl2', default_options: [ 'test=false' ]),
   ]
   executable('opengl-cube', 'opengl/cube.c', dependencies: opengl_dep, override_options: fun_opt)
+  executable('opengl-gltf', 'opengl/gltf.c', dependencies: opengl_dep, override_options: fun_opt)
 endif
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
