@@ -139,7 +139,7 @@ uint8_t* fun_load_binary_file(const char* path, size_t* length_out) {
 // Image parsing
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-bool fun_image_from_file(Fun_Image* restrict out, const char* path) {
+bool fun_image_from_file(fun_image_t* restrict out, const char* path) {
     size_t      file_len = 0;
     uint8_t*    file_contents = NULL;
     if ((file_contents = fun_load_binary_file(path, &file_len)) == NULL || !file_len) {
@@ -150,7 +150,7 @@ bool fun_image_from_file(Fun_Image* restrict out, const char* path) {
     return parsed;
 }
 
-bool fun_image_from_memory(Fun_Image* restrict out, const uint8_t* buffer, size_t buffer_length) {
+bool fun_image_from_memory(fun_image_t* restrict out, const uint8_t* buffer, size_t buffer_length) {
     spng_ctx* spng = spng_ctx_new(0); FUN_ASSERT(spng);
     spng_set_crc_action(spng, SPNG_CRC_USE, SPNG_CRC_USE);
     spng_set_png_buffer(spng, buffer, buffer_length);

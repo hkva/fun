@@ -17,11 +17,11 @@ enum {
     _E_TEX_COUNT,
 };
 
-typedef struct _E_Vert {
+typedef struct _e_vert {
     float p[2];
     float t[2];
     float c[4];
-} _E_Vert;
+} _e_vert_t;
 
 #define _E_BATCH_SIZE 64
 
@@ -38,7 +38,7 @@ static struct {
     uint32_t        color;
     // Batch triangle renderer
     GLuint          b_texture;
-    _E_Vert         b_batch[_E_BATCH_SIZE * 3];
+    _e_vert_t       b_batch[_E_BATCH_SIZE * 3];
     GLuint          b_vao, b_vbo;
     unsigned int    b_count;
 } _e;
@@ -144,7 +144,7 @@ void e_create(const char* window_title) {
     // Create built-in textures
     uint32_t white_pixels[8*8];
     memset(white_pixels, 0xFF, sizeof(white_pixels));
-    E_Image white = { 8, 8, white_pixels };
+    fun_image_t white = { 8, 8, white_pixels };
     _e.tex_builtin[_E_TEX_WHITE] = e_create_texture(&white);
 
     // Initialize the batch renderer
@@ -157,11 +157,11 @@ void e_create(const char* window_title) {
     glBindBuffer(GL_ARRAY_BUFFER, _e.b_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(_e.b_batch), NULL, GL_DYNAMIC_DRAW);
     // layout
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(_E_Vert), (void*)(sizeof(float) * 0));
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(_e_vert_t), (void*)(sizeof(float) * 0));
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(_E_Vert), (void*)(sizeof(float) * 2));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(_e_vert_t), (void*)(sizeof(float) * 2));
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(_E_Vert), (void*)(sizeof(float) * 4));
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(_e_vert_t), (void*)(sizeof(float) * 4));
     glEnableVertexAttribArray(2);
 
     e_draw_set_color(E_CWHITE);
@@ -203,10 +203,10 @@ float e_now(void) {
 // Asset processing
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-E_Texture e_create_texture(const E_Image* img) {
-    E_Texture tex; glGenTextures(1, &tex);
+e_tex_t e_create_texture(const fun_image_t* img) {
+    e_tex_t tex; glGenTextures(1, &tex);
     glBindTexture(GL_TEXTURE_2D, tex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->width, img->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img->pixels);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->width, img->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img->data);
     glGenerateMipmap(tex);
     return tex;
 }

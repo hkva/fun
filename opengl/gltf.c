@@ -157,7 +157,7 @@ int main(int argc, char* argv[]) {
     for (size_t i = 0; i < gltf->textures_count; ++i) {
         cgltf_texture* gtex = &gltf->textures[i];
         // Textures can be embedded or point to a file
-        Fun_Image img = { 0 };
+        fun_image_t img = { 0 };
         if (gtex->image->buffer_view != NULL) {
             if (!fun_image_from_memory(&img, cgltf_buffer_view_data(gtex->image->buffer_view), gtex->image->buffer_view->size)) {
                 fun_err("Failed to parse texture #%zu from memory", i+1);

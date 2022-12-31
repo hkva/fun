@@ -47,18 +47,13 @@ float e_now(void);
 // Asset processing
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-typedef struct E_Image {
-    int width, height;
-    uint32_t* pixels;
-} E_Image;
-
-typedef unsigned int E_Texture;
+typedef unsigned int e_tex_t;
 
 enum {
     E_TEXTURE_BAD = -1,
 };
 
-E_Texture e_create_texture(const E_Image* img);
+e_tex_t e_create_texture(const fun_image_t* img);
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // Rendering

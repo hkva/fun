@@ -72,13 +72,13 @@ uint8_t* fun_load_binary_file(const char* path, size_t* length);
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 // RGBA8 image
-typedef struct Fun_Image {
+typedef struct fun_image {
     int         width;
     int         height;
     uint32_t*   data;
-} Fun_Image;
+} fun_image_t;
 
-bool fun_image_from_file(Fun_Image* restrict out, const char* path);
-bool fun_image_from_memory(Fun_Image* restrict out, const uint8_t* buffer, size_t buffer_length);
+bool fun_image_from_file(fun_image_t* restrict out, const char* path);
+bool fun_image_from_memory(fun_image_t* restrict out, const uint8_t* buffer, size_t buffer_length);
 
 #endif // _FUN_H_
