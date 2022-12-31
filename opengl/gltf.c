@@ -24,17 +24,17 @@ static const char* GLTF_VS =
 
 // Fragment shader
 static const char* GLTF_FS =
-    "#version 330 core                                                              \n"
-    "                                                                               \n"
-    "in vec2 v_t;                                                                   \n"
-    "                                                                               \n"
-    "uniform sampler2D u_tex;                                                       \n"
-    "                                                                               \n"
-    "out vec4 color;                                                                \n"
-    "                                                                               \n"
-    "void main() {                                                                  \n"
-    "   color = texture(u_tex, v_t);                                                \n"
-    "}                                                                              \n";
+    "#version 330 core                  \n"
+    "                                   \n"
+    "in vec2 v_t;                       \n"
+    "                                   \n"
+    "uniform sampler2D u_tex;           \n"
+    "                                   \n"
+    "out vec4 color;                    \n"
+    "                                   \n"
+    "void main() {                      \n"
+    "   color = texture(u_tex, v_t);    \n"
+    "}                                  \n";
 
 static GLuint compile_shader(const char* src, GLenum type) {
     GLuint shader = glCreateShader(type);
@@ -285,6 +285,7 @@ int main(int argc, char* argv[]) {
     float cam_pos[3] = { 0 };
     float cam_vel[3] = { 0 };
     float cam_ang[2] = { 0 };
+    float cam_fov = 75.0f;
 
     // Window loop
     float then = 0.0f;
@@ -338,6 +339,9 @@ int main(int argc, char* argv[]) {
                         cam_ang[1] += (float)evt.motion.yrel / 1000.0f;
                     }
                 } break;
+                case SDL_MOUSEWHEEL: {
+                    cam_fov += evt.wheel.y;
+                };
             };
         }
 
@@ -369,7 +373,7 @@ int main(int argc, char* argv[]) {
 
         // Update projection matrix
         float proj[4*4];
-        fun_mat4_perspective(proj, FUN_DEG2RAD(75.0f/2.0f), (float)vp_w/(float)vp_h, 0.01f, 10.0f);
+        fun_mat4_perspective(proj, FUN_DEG2RAD(cam_fov/2.0f), (float)vp_w/(float)vp_h, 0.01f, 10.0f);
 
         // Update camera matrix
         // translate
