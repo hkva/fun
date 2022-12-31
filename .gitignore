@@ -3,4 +3,3 @@ build/
 .cache/
 # Meson subproject files
 /subprojects/*
-!/subprojects/*.wrap

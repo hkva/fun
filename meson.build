@@ -53,6 +53,7 @@ endif
 if 'opengl' in get_option('demos') or 'all' in get_option('demos')
   opengl_dep = [
     fun_dep,
+    dependency('cgltf'),
     dependency('glew'),
     dependency('sdl2', default_options: [ 'test=false' ]),
   ]
