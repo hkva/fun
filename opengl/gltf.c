@@ -257,6 +257,7 @@ int main(int argc, char* argv[]) {
         for (size_t j = 0; j < gprim->indices->count; ++j) {
             indices[j] = cgltf_accessor_read_index(gprim->indices, j);
         }
+        glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
         mesh->indices = gprim->indices->count;
         // Map texture
         FUN_ASSERT(gprim->material->has_pbr_metallic_roughness);
