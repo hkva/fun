@@ -3,3 +3,5 @@ build/
 .cache/
 # Meson subproject files
 /subprojects/*
+# Compiled shaders
+*.spv

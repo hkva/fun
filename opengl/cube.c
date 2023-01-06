@@ -3,40 +3,16 @@
 #include <GL/glew.h>
 #include <SDL.h>
 
-// Vertex shader
-static const char* CUBE_VS =
-    "#version 330 core                                  \n"
-    "                                                   \n"
-    "layout (location = 0) in vec3 p;                   \n"
-    "layout (location = 1) in vec3 n;                   \n"
-    "layout (location = 2) in vec2 t;                   \n"
-    "                                                   \n"
-    "uniform mat4 u_proj;                               \n"
-    "uniform mat4 u_model;                              \n"
-    "                                                   \n"
-    "out vec2 v_t;                                      \n"
-    "                                                   \n"
-    "void main() {                                      \n"
-    "   v_t = t;                                        \n"
-    "   gl_Position = u_proj * u_model * vec4(p, 1.0f); \n"
-    "}                                                  \n";
+// Define this to use SPIR-V binary shaders instead of raw GLSL
+#define USE_SPIRV
 
-// Fragment shader
-static const char* CUBE_FS =
-    "#version 330 core                                                              \n"
-    "                                                                               \n"
-    "in vec2 v_t;                                                                   \n"
-    "                                                                               \n"
-    "out vec4 color;                                                                \n"
-    "                                                                               \n"
-    "void main() {                                                                  \n"
-    "   int checker = 16;                                                           \n"
-    "   if ((int(v_t.x * checker) % 2 == 0) ^^ (int(v_t.y * checker) % 2 == 0)) {   \n"
-    "       color = vec4(0.47f, 0.55f, 0.81f, 1.0f);                                \n"
-    "   } else {                                                                    \n"
-    "       color = vec4(0.29f, 0.38f, 0.68f, 1.0f);                                \n"
-    "   }                                                                           \n"
-    "}                                                                              \n";
+// Define this to print out transform matrices
+// #define DUMP_TRANSFORMS
+
+typedef struct {
+    float proj[4*4];
+    float model[4*4];
+} uniforms_t;
 
 // Cube vertex data
 static const float CUBE_VERTICES[] = {
@@ -94,11 +70,7 @@ static const unsigned int CUBE_INDICES[] = {
     20, 22, 23,
 };
 
-static GLuint compile_shader(const char* src, GLenum type) {
-    GLuint shader = glCreateShader(type);
-    glShaderSource(shader, 1, &src, NULL);
-    glCompileShader(shader);
-
+static GLuint check_shader_compile(GLuint shader) {
     // check compile status
     GLint status;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
@@ -113,9 +85,20 @@ static GLuint compile_shader(const char* src, GLenum type) {
 
 static void GLAPIENTRY on_gl_error(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
     fun_msg("GL: %s", message);
+    if (severity == GL_DEBUG_SEVERITY_HIGH || severity == GL_DEBUG_SEVERITY_MEDIUM) {
+        abort();
+    }
 }
 
 int main(int argc, char* argv[]) {
+    // Parse shaders from command-line files
+    if (argc != 3) {
+        fprintf(stderr, "Usage: cube <vs-path> <fs-path>\n");
+        return EXIT_FAILURE;
+    }
+    const char* vspath = argv[1];
+    const char* fspath = argv[2];
+        
     // Initialize SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0) {
         fun_err("Failed to initialize SDL: %s", SDL_GetError());
@@ -146,7 +129,7 @@ int main(int argc, char* argv[]) {
     glEnable(GL_DEBUG_OUTPUT);
 
     // Upload cube mesh data to the GPU
-    GLuint vao, vbo, ibo;
+    GLuint vao, vbo, ibo, ubo;
     // VAO - vertex attribute object - tracks vertex layout
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
@@ -169,12 +152,38 @@ int main(int argc, char* argv[]) {
     glGenBuffers(1, &ibo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(CUBE_INDICES), CUBE_INDICES, GL_STATIC_DRAW);
+    // UBO - uniform buffer object - stores uniform values
+    glGenBuffers(1, &ubo);
+    glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(uniforms_t), NULL, GL_DYNAMIC_DRAW);
 
     // Compile the OpenGL shader
     GLuint program = glCreateProgram();
-    GLuint vs = compile_shader(CUBE_VS, GL_VERTEX_SHADER);
-    GLuint fs = compile_shader(CUBE_FS, GL_FRAGMENT_SHADER);
-    glAttachShader(program, vs); glAttachShader(program, fs);
+    GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+    GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+#ifdef USE_SPIRV
+    // New SPIR-V binary format
+    size_t vslen = 0;
+    uint8_t* vssrc = fun_load_binary_file(vspath, &vslen);
+    size_t fslen = 0;
+    uint8_t* fssrc = fun_load_binary_file(fspath, &fslen);
+    glShaderBinary(1, &vs, GL_SHADER_BINARY_FORMAT_SPIR_V, vssrc, vslen);
+    glShaderBinary(1, &fs, GL_SHADER_BINARY_FORMAT_SPIR_V, fssrc, fslen);
+    glSpecializeShader(vs, "main", 0, NULL, NULL);
+    glSpecializeShader(fs, "main", 0, NULL, NULL);
+#else
+    // Traditional OpenGL style
+    const char* vssrc = fun_load_text(vspath);
+    const char* fssrc = fun_load_text(fspath);
+    glShaderSource(vs, 1, &vssrc, NULL);
+    glShaderSource(fs, 1, &fssrc, NULL);
+    glCompileShader(vs);
+    glCompileShader(fs);
+#endif
+    check_shader_compile(vs);
+    check_shader_compile(fs);
+    glAttachShader(program, vs);
+    glAttachShader(program, fs);
     glLinkProgram(program);
     GLint link_status;
     glGetProgramiv(program, GL_LINK_STATUS, &link_status);
@@ -183,6 +192,8 @@ int main(int argc, char* argv[]) {
         glGetProgramInfoLog(program, sizeof(log), NULL, log);
         fun_err("Failed to link OpenGL program: %s", log);
     }
+
+    uniforms_t uniforms;
 
     // Window loop
     bool running = true;
@@ -205,11 +216,9 @@ int main(int argc, char* argv[]) {
         glViewport(0, 0, vp_w, vp_h);
 
         // Update projection matrix
-        float proj[4*4];
-        fun_mat4_perspective(proj, FUN_DEG2RAD(90.0f/2.0f), (float)vp_w/(float)vp_h, 0.1f, 10.0f);
+        fun_mat4_perspective(uniforms.proj, FUN_DEG2RAD(90.0f/2.0f), (float)vp_w/(float)vp_h, 0.1f, 10.0f);
 
         // Update model matrix
-        float model[4*4];
         {
             const float t = SDL_GetTicks() / 1e3f;
             // rotate around x
@@ -217,15 +226,16 @@ int main(int argc, char* argv[]) {
             // rotate around z
             float zrot[4*4]; fun_mat4_rotate(zrot, t, 0.0f, 0.0f, 1.0f);
             // combine
-            fun_mat4_mul(model, xrot, zrot);
+            fun_mat4_mul(uniforms.model, xrot, zrot);
         }
-        model[3*4+2] = -1.5f; // move along -z
+        uniforms.model[3*4+2] = -1.5f; // move along -z
         
+#ifdef DUMP_TRANSFORMS
         fun_msg("Projection matrix:");
         for (int y = 0; y < 4; ++y) {
             printf("    ");
             for (int x = 0; x < 4; ++x) {
-                printf("%.2f ", proj[y*4+x]);
+                printf("%.2f ", uniforms.proj[y*4+x]);
             }
             printf("\n");
         };
@@ -233,13 +243,15 @@ int main(int argc, char* argv[]) {
         for (int y = 0; y < 4; ++y) {
             printf("    ");
             for (int x = 0; x < 4; ++x) {
-                printf("%.2f ", model[y*4+x]);
+                printf("%.2f ", uniforms.model[y*4+x]);
             }
             printf("\n");
         };
+#endif // DUMP_TRANSFORMS
 
-        glUniformMatrix4fv(glGetUniformLocation(program, "u_proj"), 1, GL_FALSE, proj);
-        glUniformMatrix4fv(glGetUniformLocation(program, "u_model"), 1, GL_FALSE, model);
+        // Update uniforms
+        glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
+        glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(uniforms_t), &uniforms);
 
         // Clear
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);

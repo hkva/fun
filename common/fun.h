@@ -65,7 +65,8 @@ void fun_mat4_orthographic(float* restrict m, float l, float r, float t, float b
 // IO
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-uint8_t* fun_load_binary_file(const char* path, size_t* length);
+uint8_t*    fun_load_binary_file(const char* path, size_t* length);
+char*       fun_load_text(const char* path);
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // Image parsing

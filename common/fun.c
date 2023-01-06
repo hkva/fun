@@ -135,6 +135,20 @@ uint8_t* fun_load_binary_file(const char* path, size_t* length_out) {
     return result;
 }
 
+char* fun_load_text(const char* path) {
+    FILE* f = fopen(path, "r");
+    if (!f) {
+        return NULL;
+    }
+    fseek(f, 0, SEEK_END);
+    long len = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    char* str = calloc(len+1, 1);
+    fread(str, 1, len, f);
+    fclose(f);
+    return str;
+}
+
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // Image parsing
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
