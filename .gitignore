@@ -1,3 +1,4 @@
 # C++ build files
 /c_cpp/[Bb]uild/
 /c_cpp/[Bb]in/
+/c_cpp/.cache/
