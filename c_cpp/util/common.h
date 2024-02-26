@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
-#ifndef _COMMON_H_
-#define _COMMON_H_
+#ifndef _UTIL_COMMON_H_
+#define _UTIL_COMMON_H_
 
 #include <assert.h>
 #include <stddef.h>
@@ -14,7 +14,12 @@
 // Macros
 //
 
+#define ArrLen(arr) (sizeof(arr) / sizeof((arr)[0]))
+
 #define Assert(...) assert(__VA_ARGS__)
+
+#define Error(...)  fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); abort()
+#define Info(...)   fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n")
 
 //
 // Fundamental types
@@ -65,4 +70,18 @@ static inline Buffer LoadBinaryFile(const char* path) {
     return buffer;
 }
 
-#endif // _COMMON_H_
+static inline char* LoadTextFile(const char* path) {
+    char* buffer = NULL;
+    FILE* f = fopen(path, "rb");
+    if (f) {
+        fseek(f, 0, SEEK_END);
+        long len = ftell(f);
+        fseek(f, 0, SEEK_SET);
+        buffer = calloc(len + 1, 1);
+        fread(buffer, 1, len, f);
+        fclose(f);
+    }
+    return buffer;
+}
+
+#endif // _UTIL_COMMON_H_

@@ -32,9 +32,28 @@ endif()
 
 target_compile_features(common INTERFACE c_std_99)
 
-# MD5 hash
+#
+# Thirdparty code
+#
+include("${CMAKE_CURRENT_LIST_DIR}/thirdparty/CMakeLists.txt")
+
+#
+# Programs
+#
+
+# Math demo
+add_executable(math "${CMAKE_CURRENT_LIST_DIR}/math.c")
+target_link_libraries(math PRIVATE common)
+
+# MD5 hash demo
 add_executable(md5 "${CMAKE_CURRENT_LIST_DIR}/md5.c")
 target_link_libraries(md5 PRIVATE common)
+
+# OpenGL demos
+if(HAS_SDL AND HAS_GLAD33)
+    add_executable(opengl-cube "${CMAKE_CURRENT_LIST_DIR}/opengl-cube.c")
+    target_link_libraries(opengl-cube PRIVATE common glad33 sdl)
+endif()
 
 # WinAPI demos
 if(WIN32)
