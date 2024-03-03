@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+#define SDL_MAIN_HANDLED
 #include <SDL.h>
 #include <glad/glad.h>
 
@@ -35,7 +36,7 @@ static inline const char* GetGLErrorName(GLenum error) {
     };
 };
 
-int main(int argc, char** argv) {
+int main(int argc, const char* argv[]) {
     SDL_version sdlv_l; SDL_GetVersion(&sdlv_l);
     SDL_version sdlv_c; SDL_VERSION(&sdlv_c);
     Info("SDL v%d.%d.%d (compiled against v%d.%d.%d)",
@@ -226,6 +227,8 @@ int main(int argc, char** argv) {
         M4x4 m_model = Mat4Mul(m_model_translate, m_model_rot);
 
         M4x4 m_proj = Mat4Perspective(0.1f, 20.0f, (F32)vp_w / (F32)vp_h, 90.0f);
+
+        GLCHECK(glViewport(0, 0, (F32)vp_w, (F32)vp_h));
 
         GLCHECK(glUniformMatrix4fv(glGetUniformLocation(prog, "u_model"), 1, GL_FALSE, m_model.m));
         GLCHECK(glUniformMatrix4fv(glGetUniformLocation(prog, "u_proj"), 1, GL_FALSE, m_proj.m));

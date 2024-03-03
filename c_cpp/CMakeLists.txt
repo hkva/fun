@@ -15,6 +15,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 #
 # Shared options
 #
+
 add_library(common INTERFACE)
 
 if(WIN32)
@@ -35,6 +36,7 @@ target_compile_features(common INTERFACE c_std_99)
 #
 # Thirdparty code
 #
+
 include("${CMAKE_CURRENT_LIST_DIR}/thirdparty/CMakeLists.txt")
 
 #
