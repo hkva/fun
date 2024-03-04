@@ -72,6 +72,10 @@ static inline V3 Vec3Cross(V3 left, V3 right) {
     );
 }
 
+static inline V3 Vec3Invert(V3 v) {
+    return Vec3(-v.x, -v.y, -v.z);
+}
+
 //
 // Matrix4x4
 //
@@ -113,6 +117,24 @@ static inline M4x4 Mat4Translate(V3 translate) {
     result.m[0*4+3] = translate.x;
     result.m[1*4+3] = translate.y;
     result.m[2*4+3] = translate.z;
+    return result;
+}
+
+static inline M4x4 Mat4Scale(V3 scale) {
+    M4x4 result = Mat4Zero();
+    result.m[0*4+0] = scale.x;
+    result.m[1*4+1] = scale.y;
+    result.m[2*4+2] = scale.z;
+    result.m[3*4+3] = 1.0f;
+    return result;
+}
+
+static inline M4x4 Mat4ScaleUniform(F32 scale) {
+    M4x4 result = Mat4Zero();
+    result.m[0*4+0] = scale;
+    result.m[1*4+1] = scale;
+    result.m[2*4+2] = scale;
+    result.m[3*4+3] = 1.0f;
     return result;
 }
 

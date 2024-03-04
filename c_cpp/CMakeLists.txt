@@ -26,6 +26,7 @@ if(MSVC)
     target_compile_options(common INTERFACE /W4)
 else()
     target_compile_options(common INTERFACE
+        -g
         -Wall -Wextra
         -Wno-unused-parameter
     )
