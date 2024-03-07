@@ -67,7 +67,6 @@ static inline const char* GetGLErrorName(GLenum error) {
 };
 
 static void DrawScene(const Model* models, USize num_models, Camera cam) {
-
     M4x4 cam_proj = Mat4Perspective(cam.near, cam.far, cam.aspect, cam.fov);
 
     M4x4 cam_transform = Mat4Translate(Vec3Invert(cam.pos));
@@ -75,7 +74,7 @@ static void DrawScene(const Model* models, USize num_models, Camera cam) {
     for (USize i = 0; i < num_models; ++i) {
         const Model* m = &models[i];
 
-        M4x4 model_transform = Mat4Mul(cam_transform, m->transform);
+        M4x4 model_transform = Mat4Mul(m->transform, cam_transform);
 
         GLCHECK(glBindVertexArray(m->mesh.vao));
 
@@ -88,7 +87,6 @@ static void DrawScene(const Model* models, USize num_models, Camera cam) {
         GLCHECK(glUniform4f(glGetUniformLocation(m->prog, "u_color"), m->color[0], m->color[1], m->color[2], 1.0f));
 
         GLCHECK(glDrawElements(GL_TRIANGLES, m->num_indices, GL_UNSIGNED_INT, NULL));
-
     }
 }
 
@@ -322,12 +320,21 @@ int main(int argc, const char* argv[]) {
         const F32 t = (F32)SDL_GetTicks() / 1e3f;
 
         // r: <t * 30.0f, t * 30.0f, 0.0f>
-        cube.transform = Mat4Mul(Mat4RotateX(t * 30.0f), Mat4RotateY(t * 30.0f));
+        cube.transform = Mat4Mul(
+            Mat4RotateX(t * 30.0f),
+            Mat4RotateY(t * 30.0f)
+        );
 
         // p: <0.0f, -1.0f, 0.0>
         // r: <90.0f, 0.0f, 0.0f>
         // s: <4.0f, 4.0f, 4.0f>
-        plane.transform = Mat4Mul(Mat4Mul(Mat4Translate(Vec3(0.0f, -1.0f, 0.0f)), Mat4ScaleUniform(4.0f)), Mat4RotateX(90.0f));
+        plane.transform = Mat4Mul(
+            Mat4RotateX(90.0f), 
+            Mat4Mul(
+                Mat4ScaleUniform(4.0f),
+                Mat4Translate(Vec3(0.0f, -1.0f, 0.0f))
+            )
+        );
 
         S32 vp_w = 0; S32 vp_h = 0;
         SDL_GL_GetDrawableSize(wnd, &vp_w, &vp_h);

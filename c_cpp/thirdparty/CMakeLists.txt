@@ -25,4 +25,8 @@ endif()
 # https://glad.dav1d.de/
 add_library(glad33 STATIC "${CMAKE_CURRENT_LIST_DIR}/glad33/src/glad.c")
 target_include_directories(glad33 PUBLIC "${CMAKE_CURRENT_LIST_DIR}/glad33/include")
-set(HAS_GLAD33 TRUE)
+
+# Handmade math
+# https://github.com/HandmadeMath/HandmadeMath
+add_library(handmade-math INTERFACE)
+target_include_directories(handmade-math INTERFACE "${CMAKE_CURRENT_LIST_DIR}/HandmadeMath-2.0.0")

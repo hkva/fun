@@ -46,14 +46,14 @@ include("${CMAKE_CURRENT_LIST_DIR}/thirdparty/CMakeLists.txt")
 
 # Math demo
 add_executable(math "${CMAKE_CURRENT_LIST_DIR}/math.c")
-target_link_libraries(math PRIVATE common)
+target_link_libraries(math PRIVATE common handmade-math)
 
 # MD5 hash demo
 add_executable(md5 "${CMAKE_CURRENT_LIST_DIR}/md5.c")
 target_link_libraries(md5 PRIVATE common)
 
 # OpenGL demos
-if(HAS_SDL AND HAS_GLAD33)
+if(HAS_SDL)
     add_executable(opengl-cube "${CMAKE_CURRENT_LIST_DIR}/opengl-cube.c")
     target_link_libraries(opengl-cube PRIVATE common glad33 sdl)
 endif()

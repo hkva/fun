@@ -105,7 +105,7 @@ static inline M4x4 Mat4Mul(M4x4 left, M4x4 right) {
     for (U8 i = 0; i < 4; ++i) {
         for (U8 j = 0; j < 4; ++j) {
             for (U8 k = 0; k < 4; ++k) {
-                result.m[i * 4 + j] += left.m[i * 4 + k] * right.m[k * 4 + j];
+                result.m[i * 4 + j] += left.m[k * 4 + j] * right.m[i * 4 + k];
             }
         }
     }
@@ -161,7 +161,7 @@ static inline M4x4 Mat4RotateY(F32 degrees) {
 static inline M4x4 Mat4Perspective(F32 near, F32 far, F32 aspect, F32 fov) {
     M4x4 result = Mat4Zero();
 
-    const F32 tangent = Tan(Deg2Rad(fov / 2));
+    const F32 tangent = Tan(Deg2Rad(fov / 2.0f));
     const F32 half_height = near * tangent;
     const F32 half_width = half_height * aspect;
 
