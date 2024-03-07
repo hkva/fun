@@ -4,12 +4,13 @@
 #include <SDL.h>
 #include <glad/glad.h>
 
-#include "util/common.h"
-#include "util/math.h"
+#include "hk.hh"
+
+using namespace hk;
 
 typedef struct Vertex {
-    V3 p;
-    V2 t;
+    Vec3 p;
+    Vec2 t;
 } Vertex;
 
 typedef struct Mesh {
@@ -25,29 +26,29 @@ enum {
 
 typedef struct Camera {
     int type;
-    V3 pos;
-    V3 ang;
-    F32 fov;
-    F32 near;
-    F32 far;
-    F32 aspect;
+    Vec3 pos;
+    Vec3 ang;
+    f32 fov;
+    f32 near;
+    f32 far;
+    f32 aspect;
 } Camera;
 
 typedef struct Model {
     Mesh mesh;
-    M4x4 transform;
-    F32 color[3];
-    F32 grid_scale;
+    Mat4 transform;
+    f32 color[3];
+    f32 grid_scale;
     GLuint prog;
-    USize num_indices;
+    usize num_indices;
 } Model;
 
 #if 1
     #define GLCHECK(code) do {                                                                          \
         code;                                                                                           \
-        const U32 glcheck_err = glGetError();                                                           \
+        const u32 glcheck_err = glGetError();                                                           \
         if (glcheck_err != GL_NO_ERROR) {                                                               \
-            Error("%s:%d: %s -> %s", __FILE__, __LINE__, #code, GetGLErrorName(glcheck_err));           \
+            dbgerr("%s:%d: %s -> %s", __FILE__, __LINE__, #code, GetGLErrorName(glcheck_err));           \
         }                                                                                               \
     } while (0);
 #else
@@ -66,22 +67,22 @@ static inline const char* GetGLErrorName(GLenum error) {
     };
 };
 
-static void DrawScene(const Model* models, USize num_models, Camera cam) {
-    M4x4 cam_proj = Mat4Perspective(cam.near, cam.far, cam.aspect, cam.fov);
+static void DrawScene(const Model* models, usize num_models, Camera cam) {
+    Mat4 cam_proj = Mat4::perspective(cam.near, cam.far, cam.aspect, cam.fov);
 
-    M4x4 cam_transform = Mat4Translate(Vec3Invert(cam.pos));
+    Mat4 cam_transform = Mat4::translate(cam.pos.invert());
 
-    for (USize i = 0; i < num_models; ++i) {
+    for (usize i = 0; i < num_models; ++i) {
         const Model* m = &models[i];
 
-        M4x4 model_transform = Mat4Mul(m->transform, cam_transform);
+        Mat4 model_transform = m->transform * cam_transform;
 
         GLCHECK(glBindVertexArray(m->mesh.vao));
 
         GLCHECK(glUseProgram(m->prog));
 
-        GLCHECK(glUniformMatrix4fv(glGetUniformLocation(m->prog, "u_model"), 1, GL_FALSE, model_transform.m));
-        GLCHECK(glUniformMatrix4fv(glGetUniformLocation(m->prog, "u_proj"), 1, GL_FALSE, cam_proj.m));
+        GLCHECK(glUniformMatrix4fv(glGetUniformLocation(m->prog, "u_model"), 1, GL_FALSE, model_transform.base()));
+        GLCHECK(glUniformMatrix4fv(glGetUniformLocation(m->prog, "u_proj"), 1, GL_FALSE, cam_proj.base()));
 
         GLCHECK(glUniform1f(glGetUniformLocation(m->prog, "u_grid_scale"), m->grid_scale));
         GLCHECK(glUniform4f(glGetUniformLocation(m->prog, "u_color"), m->color[0], m->color[1], m->color[2], 1.0f));
@@ -93,17 +94,17 @@ static void DrawScene(const Model* models, USize num_models, Camera cam) {
 int main(int argc, const char* argv[]) {
     SDL_version sdlv_l; SDL_GetVersion(&sdlv_l);
     SDL_version sdlv_c; SDL_VERSION(&sdlv_c);
-    Info("SDL v%d.%d.%d (compiled against v%d.%d.%d)",
+    dbglog("SDL v%d.%d.%d (compiled against v%d.%d.%d)",
         sdlv_l.major, sdlv_l.minor, sdlv_l.patch,
         sdlv_c.major, sdlv_c.minor, sdlv_c.patch);
     if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
-        Error("Failed to initialize SDL: %s", SDL_GetError());
+        dbgerr("Failed to initialize SDL: %s", SDL_GetError());
     }
 
-    const U32 wndflags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
+    const u32 wndflags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
     SDL_Window* wnd = SDL_CreateWindow(__FILE__, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, wndflags);
     if (!wnd) {
-        Error("Failed to create SDL window: %s", SDL_GetError());
+        dbgerr("Failed to create SDL window: %s", SDL_GetError());
     }
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -113,19 +114,19 @@ int main(int argc, const char* argv[]) {
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 2);
     SDL_GLContext gl = SDL_GL_CreateContext(wnd);
     if (!gl) {
-        Error("Failed to create OpenGL context: %s", SDL_GetError());
+        dbgerr("Failed to create OpenGL context: %s", SDL_GetError());
     }
     if (SDL_GL_MakeCurrent(wnd, gl) < 0) {
-        Error("Failed to activate OpenGL context: %s", SDL_GetError());
+        dbgerr("Failed to activate OpenGL context: %s", SDL_GetError());
     }
 
     if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) {
-        Error("Failed to load OpenGL functions");
+        dbgerr("Failed to load OpenGL functions");
     }
 
-    Info("GL_VERSION:  %s", glGetString(GL_VERSION));   GLCHECK();
-    Info("GL_VENDOR:   %s", glGetString(GL_VENDOR));    GLCHECK();
-    Info("GL_RENDERER: %s", glGetString(GL_RENDERER));  GLCHECK();
+    dbglog("GL_VERSION:  %s", glGetString(GL_VERSION));   GLCHECK();
+    dbglog("GL_VENDOR:   %s", glGetString(GL_VENDOR));    GLCHECK();
+    dbglog("GL_RENDERER: %s", glGetString(GL_RENDERER));  GLCHECK();
 
     // Enable depth testing
     GLCHECK(glEnable(GL_DEPTH_TEST));
@@ -143,20 +144,21 @@ int main(int argc, const char* argv[]) {
         { GL_VERTEX_SHADER,     "opengl-cube-vert.glsl" },
         { GL_FRAGMENT_SHADER,   "opengl-cube-frag.glsl" },
     };
-    for (USize i = 0; i < ArrLen(shaders); ++i) {
-        char* source = LoadTextFile(shaders[i].path);
-        if (!source) {
-            Error("Failed to load %s", shaders[i].path);
+    for (usize i = 0; i < arrlen(shaders); ++i) {
+        std::string source = load_text_file(shaders[i].path);
+        if (source.empty()) {
+            dbgerr("Failed to load %s", shaders[i].path);
         }
+        const char* source_c = source.c_str();
         GLuint shader = glCreateShader(shaders[i].type); GLCHECK();
-        GLCHECK(glShaderSource(shader, 1, (const GLchar**)&source, NULL));
+        GLCHECK(glShaderSource(shader, 1, (const GLchar**)&source_c, NULL));
         GLCHECK(glCompileShader(shader));
         GLint status = 0;
         GLCHECK(glGetShaderiv(shader, GL_COMPILE_STATUS, &status));
         if (status != GL_TRUE) {
             char log[512];
             GLCHECK(glGetShaderInfoLog(shader, sizeof(log), NULL, log));
-            Error("Error while compiling shader %s: %s", shaders[i].path, log);
+            dbgerr("Error while compiling shader %s: %s", shaders[i].path, log);
         }
         GLCHECK(glAttachShader(prog, shader));
     }
@@ -166,7 +168,7 @@ int main(int argc, const char* argv[]) {
     if (link_status != GL_TRUE) {
         char log[512];
         GLCHECK(glGetProgramInfoLog(prog, sizeof(prog), NULL, log));
-        Error("Error while linking program: %s", log);
+        dbgerr("Error while linking program: %s", log);
     }
 
     //    +-----------+
@@ -213,7 +215,7 @@ int main(int argc, const char* argv[]) {
         { Vec3(-0.5f, -0.5f, -0.5f), Vec2(0.0f, 0.0f) },
     };
 
-    const U32 cube_indices[] = {
+    const u32 cube_indices[] = {
          0,  1,  2,
          0,  2,  3,
          4,  5,  6,
@@ -228,11 +230,11 @@ int main(int argc, const char* argv[]) {
         20, 22, 23,
     };
 
-    Model cube = { 0 };
+    Model cube = { };
     cube.color[0] = 0.3f; cube.color[1] = 0.3f; cube.color[2] = 0.6f;
     cube.grid_scale = 8.0f;
     cube.prog = prog;
-    cube.num_indices = ArrLen(cube_indices);
+    cube.num_indices = arrlen(cube_indices);
 
     // Vertex array object - stores array bindings
     GLCHECK(glGenVertexArrays(1, &cube.mesh.vao));
@@ -269,16 +271,16 @@ int main(int argc, const char* argv[]) {
         { Vec3(-0.5f, -0.5f,  0.0f), Vec2(0.0f, 0.0f) },
     };
 
-    const U32 plane_indices[] = {
+    const u32 plane_indices[] = {
          0,  1,  2,
          0,  2,  3,
     };
 
-    Model plane = { 0 };
+    Model plane = { };
     plane.color[0] = 0.4f; plane.color[1] = 0.4f; plane.color[2] = 0.4f;
     plane.grid_scale = 8.0f;
     plane.prog = prog;
-    plane.num_indices = ArrLen(plane_indices);
+    plane.num_indices = arrlen(plane_indices);
 
     GLCHECK(glGenVertexArrays(1, &plane.mesh.vao));
     GLCHECK(glBindVertexArray(plane.mesh.vao));
@@ -297,7 +299,7 @@ int main(int argc, const char* argv[]) {
     GLCHECK(glEnableVertexAttribArray(1));
 
     SDL_ShowWindow(wnd);
-    U8 wants_quit = 0;
+    u8 wants_quit = 0;
     do {
         SDL_Event evt;
         while (SDL_PollEvent(&evt)) {
@@ -317,31 +319,24 @@ int main(int argc, const char* argv[]) {
         // Update scene
         //
 
-        const F32 t = (F32)SDL_GetTicks() / 1e3f;
+        const f32 t = (f32)SDL_GetTicks() / 1e3f;
 
         // r: <t * 30.0f, t * 30.0f, 0.0f>
-        cube.transform = Mat4Mul(
-            Mat4RotateX(t * 30.0f),
-            Mat4RotateY(t * 30.0f)
-        );
+        cube.transform = Mat4::rotate_x(t * 30.0f) * Mat4::rotate_y(t * 30.0f);
 
         // p: <0.0f, -1.0f, 0.0>
         // r: <90.0f, 0.0f, 0.0f>
         // s: <4.0f, 4.0f, 4.0f>
-        plane.transform = Mat4Mul(
-            Mat4RotateX(90.0f), 
-            Mat4Mul(
-                Mat4ScaleUniform(4.0f),
-                Mat4Translate(Vec3(0.0f, -1.0f, 0.0f))
-            )
-        );
+        plane.transform =
+            Mat4::rotate_x(90.0f) *
+            (Mat4::scale(Vec3::broadcast(4.0f)) * Mat4::translate(Vec3(0.0f, -1.0f, 0.0f)));
 
-        S32 vp_w = 0; S32 vp_h = 0;
+        i32 vp_w = 0; i32 vp_h = 0;
         SDL_GL_GetDrawableSize(wnd, &vp_w, &vp_h);
 
         GLCHECK(glClearColor(0.1f, 0.1f, 0.1f, 1.0f));
         GLCHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-        GLCHECK(glViewport(0, 0, (F32)vp_w, (F32)vp_h));
+        GLCHECK(glViewport(0, 0, (f32)vp_w, (f32)vp_h));
 
         Model scene[] = { cube, plane };
 
@@ -349,15 +344,15 @@ int main(int argc, const char* argv[]) {
         // Draw scene
         //
 
-        Camera cam = { 0 };
+        Camera cam = { };
         cam.pos = Vec3(0.0f, 0.0f, 1.5f);
         cam.type = CAM_PERSPECTIVE;
         cam.fov = 90.0f;
         cam.near = 0.1f;
         cam.far = 20.0f;
-        cam.aspect = (F32)vp_w / (F32)vp_h;
+        cam.aspect = (f32)vp_w / (f32)vp_h;
 
-        DrawScene(scene, ArrLen(scene), cam);
+        DrawScene(scene, arrlen(scene), cam);
 
         SDL_GL_SwapWindow(wnd);
     } while (!wants_quit);

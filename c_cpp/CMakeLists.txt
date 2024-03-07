@@ -33,6 +33,7 @@ else()
 endif()
 
 target_compile_features(common INTERFACE c_std_99)
+target_compile_features(common INTERFACE cxx_std_17)
 
 #
 # Thirdparty code
@@ -45,16 +46,16 @@ include("${CMAKE_CURRENT_LIST_DIR}/thirdparty/CMakeLists.txt")
 #
 
 # Math demo
-add_executable(math "${CMAKE_CURRENT_LIST_DIR}/math.c")
+add_executable(math "${CMAKE_CURRENT_LIST_DIR}/math.cc")
 target_link_libraries(math PRIVATE common handmade-math)
 
 # MD5 hash demo
-add_executable(md5 "${CMAKE_CURRENT_LIST_DIR}/md5.c")
+add_executable(md5 "${CMAKE_CURRENT_LIST_DIR}/md5.cc")
 target_link_libraries(md5 PRIVATE common)
 
 # OpenGL demos
 if(HAS_SDL)
-    add_executable(opengl-cube "${CMAKE_CURRENT_LIST_DIR}/opengl-cube.c")
+    add_executable(opengl-cube "${CMAKE_CURRENT_LIST_DIR}/opengl-cube.cc")
     target_link_libraries(opengl-cube PRIVATE common glad33 sdl)
 endif()
 

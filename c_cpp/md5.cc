@@ -3,17 +3,18 @@
 // https://en.wikipedia.org/wiki/MD5
 // https://github.com/B-Con/crypto-algorithms/blob/master/md5.c
 
-#include "util/common.h"
-#include <stdlib.h>
+#include "hk.hh"
 
-static const U32 MD5_SHIFT_TABLE[64] = {
+using namespace hk;
+
+static const u32 MD5_SHIFT_TABLE[64] = {
     7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
     5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20, 5,  9, 14, 20,
     4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
     6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21,
 };
 
-static const U32 MD5_SIN_TABLE[64] = {
+static const u32 MD5_SIN_TABLE[64] = {
     0xD76AA478, 0xE8C7B756, 0x242070DB, 0xC1BDCEEE,
     0xF57C0FAF, 0x4787C62A, 0xA8304613, 0xFD469501,
     0x698098D8, 0x8B44F7AF, 0xFFFF5BB1, 0x895CD7BE,
@@ -38,42 +39,42 @@ int main(int argc, const char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    Buffer file = LoadBinaryFile(argv[1]);
-    if (!file.data) {
-        fprintf(stderr, "Failed to load file\n");
-        return EXIT_FAILURE;
+    std::vector<u8> file = load_binary_file(argv[1]);
+    if (!file.size()) {
+       fprintf(stderr, "Failed to load file %s\n", argv[1]);
+        return EXIT_FAILURE; 
     }
 
     // The MD5 algorithm expects data in 64-byte blocks. Data should be followed immediately by a "one" bit, then
     // padded with zeroes until the last 8 bytes of the last block, where the size of the input in bytes is written.
     // 
     // https://www.desmos.com/calculator/hypjdhc7v7
-    const USize input_len = (((file.length + 8) / 64) + 1) * 64;
-    U8* input = calloc(1, input_len);
+    const usize input_len = (((file.size() + 8) / 64) + 1) * 64;
+    std::vector<u8> input = std::vector<u8>(); input.resize(input_len);
 
     // Set initial buffer
-    memcpy(input, file.data, file.length);
+    memcpy(&input[0], &file[0], file.size());
 
     // Set "one" bit
-    input[file.length] = 1 << 7;
+    input[file.size()] = 1 << 7;
 
     // Write size in bite
-    const U64 size_bits = file.length * 8;
-    memcpy(&input[input_len - sizeof(U64)], &size_bits, sizeof(size_bits));
+    const u64 size_bits = file.size() * 8;
+    memcpy(&input[input_len - sizeof(u64)], &size_bits, sizeof(size_bits));
 
     // Set initial state
-    U32 state_A = 0x67452301;
-    U32 state_B = 0xEFCDAB89;
-    U32 state_C = 0x98BADCFE;
-    U32 state_D = 0x10325476;
+    u32 state_A = 0x67452301;
+    u32 state_B = 0xEFCDAB89;
+    u32 state_C = 0x98BADCFE;
+    u32 state_D = 0x10325476;
 
     // Process 512-bit chunks
-    Assert(input_len % 64 == 0);
-    for (USize i = 0; i < input_len / 64; ++i) {
-        U32 a = state_A;
-        U32 b = state_B;
-        U32 c = state_C;
-        U32 d = state_D;
+    HK_ASSERT(input_len % 64 == 0);
+    for (usize i = 0; i < input_len / 64; ++i) {
+        u32 a = state_A;
+        u32 b = state_B;
+        u32 c = state_C;
+        u32 d = state_D;
 
         // https://en.wikipedia.org/wiki/MD5#Algorithm
         #define F(b, c, d) ((b & c) | (~b & d))
@@ -81,9 +82,9 @@ int main(int argc, const char* argv[]) {
         #define H(b, c, d) (b ^ c ^ d)
         #define I(b, c, d) (c ^ (b | ~d))
 
-        for (U32 j = 0; j < 64; ++j) {
-            U32 f = 0;
-            U32 g = 0;
+        for (u32 j = 0; j < 64; ++j) {
+            u32 f = 0;
+            u32 g = 0;
             if (j < 16) {
                 f = F(b, c, d);
                 g = j;
@@ -100,12 +101,17 @@ int main(int argc, const char* argv[]) {
                 f = I(b, c, d);
                 g = (j * 7) % 16;
             }
-            f = f + a + MD5_SIN_TABLE[j] + ((U32*)&input[i * 64])[g];
+            f = f + a + MD5_SIN_TABLE[j] + ((u32*)&input[i * 64])[g];
             a = d;
             d = c;
             c = b;
-            b = b + RotLeft32(f, MD5_SHIFT_TABLE[j]);
+            b = b + rotate_left(f, MD5_SHIFT_TABLE[j]);
         }
+
+        #undef I
+        #undef H
+        #undef G
+        #undef F
 
         state_A += a;
         state_B += b;
@@ -113,9 +119,9 @@ int main(int argc, const char* argv[]) {
         state_D += d;
     }
 
-    U8 digest[16];
+    u8 digest[16];
 
-    const U32 result32[4] = {
+    const u32 result32[4] = {
         state_A,
         state_B,
         state_C,
