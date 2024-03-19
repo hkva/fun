@@ -21,6 +21,13 @@ elseif(APPLE)
     set(HAS_SDL TRUE)
 endif()
 
+# stb
+# https://github.com/nothings/stb
+add_library(stb STATIC
+    "${CMAKE_CURRENT_LIST_DIR}/stb/stb_impl.c"
+)
+target_include_directories(stb PUBLIC "${CMAKE_CURRENT_LIST_DIR}/stb")
+
 # glad 3.3
 # https://glad.dav1d.de/
 add_library(glad33 STATIC "${CMAKE_CURRENT_LIST_DIR}/glad33/src/glad.c")

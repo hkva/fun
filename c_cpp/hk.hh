@@ -18,10 +18,12 @@
 // Macros
 // ==============================
 
-#define HK_ASSERT assert
-
 #ifdef __GNUC__
 #   define HK_GCC
+#endif
+
+#ifndef HK_ASSERT
+#   define HK_ASSERT assert
 #endif
 
 #ifdef HK_GCC
@@ -101,6 +103,14 @@ public:
 
     Vec2(f32 x, f32 y) : x(x), y(y) {
     }
+
+    Vec2 operator+(const Vec2& rhs) const {
+        return Vec2(x + rhs.x, y + rhs.y);
+    }
+
+    Vec2 operator-(const Vec2& rhs) const {
+        return Vec2(x - rhs.x, y - rhs.y);
+    }
 };
 
 class Vec3 {
@@ -114,15 +124,15 @@ public:
     Vec3(f32 x, f32 y, f32 z) : x(x), y(y), z(z) {
     }
 
-    Vec3 operator+(const Vec3& rhs) {
+    Vec3 operator+(const Vec3& rhs) const {
         return Vec3(x + rhs.x, y + rhs.y, z + rhs.z);
     }
 
-    Vec3 operator-(const Vec3& rhs) {
+    Vec3 operator-(const Vec3& rhs) const {
         return Vec3(x - rhs.x, y - rhs.y, z - rhs.z);
     }
 
-    Vec3 invert() {
+    Vec3 invert() const {
         return Vec3(-x, -y, -z);
     }
 public:
@@ -158,6 +168,7 @@ public:
     }
 
     Mat4 operator*(const Mat4& rhs) const {
+        // @@ optimize
         Mat4 result = Mat4();
         for (u8 i = 0; i < 4; ++i) {
             for (u8 j = 0; j < 4; ++j) {
@@ -169,7 +180,7 @@ public:
         return result;
     }
 
-    const f32* base() { return m; }
+    const f32* base() const { return m; }
 public:
     static inline Mat4 ident() {
         Mat4 m = Mat4();
@@ -228,6 +239,21 @@ public:
         result[2*4+2] = -1.0f * (z_far + z_near) / (z_far - z_near);
         result[2*4+3] = -2.0f * (z_far * z_near) / (z_far - z_near);
         result[3*4+2] = -1.0f;
+
+        return result;
+    }
+
+    static inline Mat4 orthographic(f32 z_near, f32 z_far, f32 left, f32 right, f32 top, f32 bottom) {
+        Mat4 result = Mat4();
+
+        result[0*4+0] = 2.0f / (right - left);
+        result[1*4+1] = 2.0f / (top - bottom);
+        result[2*4+2] = 2.0f / (z_near - z_far);
+        result[3*4+3] = 1.0f;
+
+        result[0*4+3] = (left + right) / (left - right);
+        result[1*4+3] = (bottom + top) / (bottom - top);
+        result[2*4+3] = (z_near + z_far) / (z_near - z_far);
 
         return result;
     }
