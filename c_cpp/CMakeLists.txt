@@ -62,6 +62,12 @@ if(HAS_SDL)
     target_link_libraries(opengl-text PRIVATE common glad33 sdl stb)
 endif()
 
+# Rectangle packing demo
+if(HAS_SDL)
+    add_executable(rect-packing "${CMAKE_CURRENT_LIST_DIR}/rect-packing.cc")
+    target_link_libraries(rect-packing PRIVATE common sdl imgui-sdl2 imgui)
+endif()
+
 # WinAPI demos
 if(WIN32)
     add_executable(winapi-tray WIN32

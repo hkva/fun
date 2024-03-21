@@ -62,6 +62,16 @@ static inline T rotate_left(T inp, usize shift) {
     return (inp << shift) | (inp >> ((sizeof(T) * 8) - shift));
 }
 
+template <typename T>
+static inline T min(T x1, T x2) {
+    return (x1 > x2) ? x2 : x1;
+}
+
+template <typename T>
+static inline T max(T x1, T x2) {
+    return (x1 > x2) ? x1 : x2;
+}
+
 // ==============================
 // Debugging
 // ==============================
@@ -256,6 +266,33 @@ public:
         result[2*4+3] = (z_near + z_far) / (z_near - z_far);
 
         return result;
+    }
+};
+
+// ==============================
+// RNG
+// ==============================
+
+class RandomXOR {
+private:
+    u32 state;
+public:
+    RandomXOR(u32 state = 0x12345678) : state(state) { }
+
+    u32 next() {
+        state ^= state << 13;
+        state ^= state >> 17;
+        state ^= state << 5;
+        return state;
+    }
+
+    f32 next_unit() {
+        return (f32)next() / (f32)0xFFFFFFFF;
+    }
+
+    template <typename T>
+    T random(T lower, T upper) {
+        return (T)(next_unit() * (T)(upper - lower)) + lower;
     }
 };
 

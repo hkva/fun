@@ -77,5 +77,18 @@ int main(int argc, const char* argv[]) {
         }
     }
 
+    // RNG
+    {
+        RandomXOR r = RandomXOR();
+
+        for (usize i = 0; i < 20; ++i) {
+            dbglog("xorshift f32 [0, 1]: %f", r.random<f32>(0.0f, 1.0f));
+        }
+
+        for (usize i = 0; i < 20; ++i) {
+            dbglog("xorshift u32 [0, 100]: %u", r.random<u32>(0, 100));
+        }
+    }
+
 	return EXIT_FAILURE;
 }

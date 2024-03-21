@@ -1,3 +1,17 @@
+# Dear ImGui
+# https://github.com/ocornut/imgui
+add_library(imgui
+    "${CMAKE_CURRENT_LIST_DIR}/imgui-1.90.4/imgui.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/imgui-1.90.4/imgui_demo.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/imgui-1.90.4/imgui_draw.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/imgui-1.90.4/imgui_tables.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/imgui-1.90.4/imgui_widgets.cpp"
+)
+target_include_directories(imgui PUBLIC
+    "${CMAKE_CURRENT_LIST_DIR}/imgui-1.90.4"
+)
+target_compile_features(imgui PUBLIC cxx_std_17)
+
 # SDL
 # https://www.libsdl.org/
 add_library(sdl INTERFACE)
@@ -19,6 +33,15 @@ elseif(APPLE)
     target_include_directories(sdl INTERFACE "/opt/homebrew/include/SDL2/")
     target_link_libraries(sdl INTERFACE "/opt/homebrew/lib/libSDL2.dylib")
     set(HAS_SDL TRUE)
+endif()
+
+# SDL backend for Dear ImGui
+if(HAS_SDL)
+    add_library(imgui-sdl2
+        "${CMAKE_CURRENT_LIST_DIR}/imgui-1.90.4/backends/imgui_impl_sdl2.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/imgui-1.90.4/backends/imgui_impl_sdlrenderer2.cpp"
+    )
+    target_link_libraries(imgui-sdl2 PRIVATE imgui sdl)
 endif()
 
 # stb
