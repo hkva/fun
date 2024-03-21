@@ -9,6 +9,8 @@
 #include "backends/imgui_impl_sdl2.h"
 #include "backends/imgui_impl_sdlrenderer2.h"
 
+#include <algorithm> // std::sort
+
 using namespace hk;
 
 static inline f32 now() {
@@ -75,6 +77,7 @@ int main(int argc, const char* argv[]) {
             ImColor color;
         };
         //
+        static std::vector<Rect> rects_original = { };
         static std::vector<Rect> rects = { };
         static f32 rects_gen_time = 0;
         //
@@ -86,7 +89,10 @@ int main(int argc, const char* argv[]) {
         static u32 canvas_h = 512;
         //
         const char* methods[] = {
-            "My naive method",
+            "Noob method",
+            "Noob method (sorted by area)",
+            "Noob method (reverse sorted by area)",
+            "Noob method (sorted by height)",
         };
         static usize selected_method = 0;
         static bool did_pack_at_least_once = false;
@@ -116,6 +122,7 @@ int main(int argc, const char* argv[]) {
                     rects.push_back(r);
                 }
                 rects_gen_time = now();
+                rects_original = rects;
             }
             ImGui::SameLine();
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, max(0.0f, 1.0f - ((now() - rects_gen_time) / 2.0f))));
@@ -126,7 +133,7 @@ int main(int argc, const char* argv[]) {
             ImGui::InputInt("Canvas height", (int*)&canvas_h);
             if (ImGui::BeginCombo("Method", methods[selected_method])) {
                 for (usize i = 0; i < arrlen(methods); ++i) {
-                    if (ImGui::Selectable(methods[selected_method], i == selected_method)) {
+                    if (ImGui::Selectable(methods[i], i == selected_method)) {
                         selected_method = i;
                     }
                     if (i == selected_method) {
@@ -137,8 +144,69 @@ int main(int argc, const char* argv[]) {
             }
 
             if (ImGui::Button("Pack")) {
+                rects = rects_original;
                 switch (selected_method) {
                 case 0: {
+                    f32 x_cur = 0;
+                    f32 y_cur = 0;
+                    f32 y_step = 0;
+                    for (auto& rect : rects) {
+                        if (x_cur + rect.size.x >= canvas_w) {
+                            y_cur += y_step;
+                            y_step = 0;
+                            x_cur = 0;
+                        }
+                        y_step = max(y_step, rect.size.y);
+                        rect.pos.x = x_cur;
+                        rect.pos.y = y_cur;
+                        x_cur += rect.size.x;
+                    }
+                } break;
+                case 1: {
+                    std::sort(rects.begin(), rects.end(), [](const Rect& left, const Rect& right) {
+                        return left.size.x * left.size.y < right.size.x * right.size.y;
+                    });
+
+                    f32 x_cur = 0;
+                    f32 y_cur = 0;
+                    f32 y_step = 0;
+                    for (auto& rect : rects) {
+                        if (x_cur + rect.size.x >= canvas_w) {
+                            y_cur += y_step;
+                            y_step = 0;
+                            x_cur = 0;
+                        }
+                        y_step = max(y_step, rect.size.y);
+                        rect.pos.x = x_cur;
+                        rect.pos.y = y_cur;
+                        x_cur += rect.size.x;
+                    }
+                } break;
+                case 2: {
+                    std::sort(rects.begin(), rects.end(), [](const Rect& left, const Rect& right) {
+                        return left.size.x * left.size.y > right.size.x * right.size.y;
+                    });
+
+                    f32 x_cur = 0;
+                    f32 y_cur = 0;
+                    f32 y_step = 0;
+                    for (auto& rect : rects) {
+                        if (x_cur + rect.size.x >= canvas_w) {
+                            y_cur += y_step;
+                            y_step = 0;
+                            x_cur = 0;
+                        }
+                        y_step = max(y_step, rect.size.y);
+                        rect.pos.x = x_cur;
+                        rect.pos.y = y_cur;
+                        x_cur += rect.size.x;
+                    }
+                } break;
+                case 3: {
+                    std::sort(rects.begin(), rects.end(), [](const Rect& left, const Rect& right) {
+                        return left.size.y < right.size.y;
+                    });
+
                     f32 x_cur = 0;
                     f32 y_cur = 0;
                     f32 y_step = 0;
