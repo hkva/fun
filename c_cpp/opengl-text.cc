@@ -120,7 +120,7 @@ int main(int argc, const char* argv[]) {
 
     GLCHECK(glGenBuffers(1, &r.vbo));
     GLCHECK(glBindBuffer(GL_ARRAY_BUFFER, r.vbo));
-    GLCHECK(glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * BATCH_SIZE, nullptr, GL_DYNAMIC_DRAW));
+    GLCHECK(glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * BATCH_SIZE * 4, nullptr, GL_DYNAMIC_DRAW));
 
     GLCHECK(glGenBuffers(1, &r.ibo));
     GLCHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r.ibo));
@@ -141,46 +141,56 @@ int main(int argc, const char* argv[]) {
     GLCHECK(glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, t)));
     GLCHECK(glEnableVertexAttribArray(1));
 
-    // Compile shaders
-    GLuint prog = glCreateProgram(); GLCHECK();
+    auto compile_shader = [](const char* vs_path, const char* fs_path) {
+        GLuint prog = glCreateProgram(); GLCHECK();
 
-    struct {
-        GLenum type;
-        const char* path;
-    } shaders[] = {
-        { GL_VERTEX_SHADER,     "opengl-text-vert.glsl" },
-        { GL_FRAGMENT_SHADER,   "opengl-text-frag.glsl" },
-    };
-    for (usize i = 0; i < arrlen(shaders); ++i) {
-        std::string source = load_text_file(shaders[i].path);
-        if (source.empty()) {
-            dbgerr("Failed to load %s", shaders[i].path);
+        struct {
+            GLenum type;
+            const char* path;
+        } shaders[] = {
+            { GL_VERTEX_SHADER,     vs_path },
+            { GL_FRAGMENT_SHADER,   fs_path },
+        };
+        for (usize i = 0; i < arrlen(shaders); ++i) {
+            std::string source = load_text_file(shaders[i].path);
+            if (source.empty()) {
+                dbgerr("Failed to load %s", shaders[i].path);
+            }
+            const char* source_c = source.c_str();
+            GLuint shader = glCreateShader(shaders[i].type); GLCHECK();
+            GLCHECK(glShaderSource(shader, 1, (const GLchar**)&source_c, NULL));
+            GLCHECK(glCompileShader(shader));
+            GLint status = 0;
+            GLCHECK(glGetShaderiv(shader, GL_COMPILE_STATUS, &status));
+            if (status != GL_TRUE) {
+                char log[512];
+                GLCHECK(glGetShaderInfoLog(shader, sizeof(log), NULL, log));
+                dbgerr("Error while compiling shader %s: %s", shaders[i].path, log);
+            }
+            GLCHECK(glAttachShader(prog, shader));
         }
-        const char* source_c = source.c_str();
-        GLuint shader = glCreateShader(shaders[i].type); GLCHECK();
-        GLCHECK(glShaderSource(shader, 1, (const GLchar**)&source_c, NULL));
-        GLCHECK(glCompileShader(shader));
-        GLint status = 0;
-        GLCHECK(glGetShaderiv(shader, GL_COMPILE_STATUS, &status));
-        if (status != GL_TRUE) {
+        GLCHECK(glLinkProgram(prog));
+        GLint link_status = 0;
+        GLCHECK(glGetProgramiv(prog, GL_LINK_STATUS, &link_status));
+        if (link_status != GL_TRUE) {
             char log[512];
-            GLCHECK(glGetShaderInfoLog(shader, sizeof(log), NULL, log));
-            dbgerr("Error while compiling shader %s: %s", shaders[i].path, log);
+            GLCHECK(glGetProgramInfoLog(prog, sizeof(prog), NULL, log));
+            dbgerr("Error while linking program: %s", log);
         }
-        GLCHECK(glAttachShader(prog, shader));
-    }
-    GLCHECK(glLinkProgram(prog));
-    GLint link_status = 0;
-    GLCHECK(glGetProgramiv(prog, GL_LINK_STATUS, &link_status));
-    if (link_status != GL_TRUE) {
-        char log[512];
-        GLCHECK(glGetProgramInfoLog(prog, sizeof(prog), NULL, log));
-        dbgerr("Error while linking program: %s", log);
-    }
 
-    std::vector<u8> ttf = load_binary_file("data/libre-baskerville.ttf");
+        return prog;
+    };
+
+    // Compile shaders
+    GLuint prog = compile_shader("opengl-text-vert.glsl", "opengl-text-frag.glsl");
+    GLuint post = compile_shader("opengl-text-vert.glsl", "opengl-text-post-frag.glsl");
+
+    std::vector<u8> ttf = load_binary_file("data/BerkeleyMono-Regular.ttf");
     if (ttf.empty()) {
-        dbgerr("Failed to load TTF");
+       std::vector<u8> ttf = load_binary_file("data/sourcecodepro.ttf");
+        if (ttf.empty()) {
+            dbgerr("Failed to load TTF");
+        } 
     }
 
     // 512x512 atlas
@@ -192,6 +202,16 @@ int main(int argc, const char* argv[]) {
     GLCHECK(glBindTexture(GL_TEXTURE_2D, tex));
     GLCHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, 512, 512, 0, GL_RED, GL_UNSIGNED_BYTE, &pixels[0]));
     GLCHECK(glGenerateMipmap(GL_TEXTURE_2D));
+
+    // Frame buffer
+    GLuint fbo; GLCHECK(glGenFramebuffers(1, &fbo));
+    
+
+    // Color attachment
+    GLuint fbo_tex; GLCHECK(glGenTextures(1, &fbo_tex));
+
+    int old_vp_w = -1;
+    int old_vp_h = -1;
 
     SDL_ShowWindow(wnd);
     u8 wants_quit = 0;
@@ -213,6 +233,21 @@ int main(int argc, const char* argv[]) {
         i32 vp_w = 0; i32 vp_h = 0;
         SDL_GL_GetDrawableSize(wnd, &vp_w, &vp_h);
 
+        GLCHECK(glBindFramebuffer(GL_FRAMEBUFFER, fbo));
+
+        // Update framebuffer texture
+        if (vp_w != old_vp_w || vp_h != old_vp_h) {
+            old_vp_w = vp_w;
+            old_vp_h = vp_h;
+
+            GLCHECK(glBindTexture(GL_TEXTURE_2D, fbo_tex));
+            GLCHECK(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, vp_w, vp_h, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr));
+            GLCHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+            GLCHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+            GLCHECK(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbo_tex, 0));
+        }
+
+
         GLCHECK(glClearColor(0.1f, 0.1f, 0.1f, 1.0f));
         GLCHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
         GLCHECK(glViewport(0, 0, (f32)vp_w, (f32)vp_h));
@@ -225,24 +260,83 @@ int main(int argc, const char* argv[]) {
         GLCHECK(glUniform1i(glGetUniformLocation(prog, "u_atlas"), 0));
         GLCHECK(glUniformMatrix4fv(glGetUniformLocation(prog, "u_proj"), 1, GL_FALSE, proj.base()))
 
+        // Sample font texture
+        GLCHECK(glBindTexture(GL_TEXTURE_2D, tex));
+
         // Quad
-#if 0
-        const Vec2 p0 = Vec2(15.0f, 15.0f);
-        const Vec2 p1 = Vec2(256.0f, 256.0f);
+#if 1
+        const Vec2 p1 = Vec2((f32)vp_w, (f32)vp_h);
+        const Vec2 p0 = p1 - Vec2(512.0f, 512.0f);
+        
         Vertex quad[] = {
-            { p0,                      Vec2(0.0f, 1.0f) },
-            { Vec2(p0.x + p1.x, p0.y), Vec2(1.0f, 1.0f) },
-            { p0 + p1,                 Vec2(1.0f, 0.0f) },
-            { Vec2(p0.x, p0.y + p1.y), Vec2(0.0f, 0.0f) },
+            { p0,               Vec2(0.0f, 1.0f) },
+            { Vec2(p1.x, p0.y), Vec2(1.0f, 1.0f) },
+            { p1,               Vec2(1.0f, 0.0f) },
+            { Vec2(p0.x, p1.y), Vec2(0.0f, 0.0f) },
         };
-        dbglog("%fx%f, %dx%d", quad[2].p.x - quad[0].p.x, quad[2].p.y - quad[0].p.y, vp_w, vp_h);
+        // dbglog("%fx%f, %dx%d", quad[2].p.x - quad[0].p.x, quad[2].p.y - quad[0].p.y, vp_w, vp_h);
         GLCHECK(glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(quad), quad));
         GLCHECK(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
 #endif
 
-        DrawText(Vec2(100.0f, 100.0f), "Hello world!");
-        DrawText(Vec2(100.0f, 200.0f), "The quick brown fox jumps over the lazy dog.");
+        const f32 now = SDL_GetTicks() / 1e3f;
+
+        Vec2 cur = Vec2(20, 35);
+
+        static auto push_text = [&](const char* text) {
+            DrawText(cur, text);
+            cur.y += 35.0f;
+        };
+
+        push_text("Hello, world!");
+        push_text("The quick brown fox jumps over the lazy dog.");
+
+        const char* animdemo = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas mollis vitae diam vitae cursus. ";
+        char tmp[512] = { };
+        strncpy(tmp, animdemo, (SDL_GetTicks() / 50) % strlen(animdemo));
+        push_text(tmp);
+
+        char loaddemo[64] = { };
+        for (usize i = 0; i < arrlen(loaddemo) - 1; ++i) {
+            char* c = &loaddemo[i];
+            switch (i) {
+            case 0: {
+                *c = '[';
+            } break;
+            case arrlen(loaddemo) - 2: {
+                *c = ']';
+            } break;
+            default: {
+                *c = (i > (SDL_GetTicks() / 25) % (arrlen(loaddemo) - 2)) ? '-' : '0';
+            }
+            }
+        }
+        push_text(loaddemo);
+
+        DrawText(Vec2((sin(now) / 4.0f + 0.5f) * vp_w, (cos(now) / 4.0f + 0.5f) * vp_h), "WOW!");
+
         DrawText(Vec2(), nullptr, true);
+
+        // Draw post-processing
+        GLCHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+        GLCHECK(glUseProgram(post));
+        GLCHECK(glUniform1i(glGetUniformLocation(post, "u_atlas"), 0));
+        GLCHECK(glUniformMatrix4fv(glGetUniformLocation(post, "u_proj"), 1, GL_FALSE, proj.base()))
+        GLCHECK(glUniform2f(glGetUniformLocation(post, "u_vp"), (f32)vp_w, (f32)vp_h));
+        GLCHECK(glBindTexture(GL_TEXTURE_2D, fbo_tex));
+
+        GLCHECK(glClear(GL_COLOR_BUFFER_BIT));
+
+        const Vec2 fb_p0 = Vec2(0.0f, 0.0f);
+        const Vec2 fb_p1 = Vec2((f32)vp_w, (f32)vp_h);
+        Vertex fb_quad[] = {
+            { fb_p0,                    Vec2(0.0f, 1.0f) },
+            { Vec2(fb_p1.x, fb_p0.y),   Vec2(1.0f, 1.0f) },
+            { fb_p1,                    Vec2(1.0f, 0.0f) },
+            { Vec2(fb_p0.x, fb_p1.y),   Vec2(0.0f, 0.0f) },
+        };
+        GLCHECK(glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(fb_quad), fb_quad));
+        GLCHECK(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
 
         SDL_GL_SwapWindow(wnd);
     } while (!wants_quit);

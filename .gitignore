@@ -5,3 +5,6 @@
 
 # Cache files
 *.DS_Store
+
+# Specific data files
+/c_cpp/data/BerkeleyMono-Regular.ttf

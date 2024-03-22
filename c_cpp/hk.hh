@@ -53,7 +53,7 @@ using f64 = double;
 using usize = std::size_t;
 
 template <typename T, usize size>
-static inline usize arrlen(T(&)[size]) {
+static inline constexpr usize arrlen(T(&)[size]) {
     return size;
 }
 
