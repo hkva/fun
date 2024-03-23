@@ -44,6 +44,12 @@ if(HAS_SDL)
     target_link_libraries(imgui-sdl2 PRIVATE imgui sdl)
 endif()
 
+# OpenGL backend for Dear ImGui
+add_library(imgui-gl
+    "${CMAKE_CURRENT_LIST_DIR}/imgui-1.90.4/backends/imgui_impl_opengl3.cpp"
+)
+target_link_libraries(imgui-gl PRIVATE imgui glad33)
+
 # stb
 # https://github.com/nothings/stb
 add_library(stb STATIC

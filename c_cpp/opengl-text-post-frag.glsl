@@ -8,9 +8,15 @@ uniform sampler2D u_atlas;
 uniform vec2 u_vp;
 
 void main() {
+#if 0
     vec2 cabbr_r = vec2(-1.0f, 0.0f);
     vec2 cabbr_g = vec2(0.0f, 0.0f);
     vec2 cabbr_b = vec2(1.0f, 0.0f);
+#else
+    vec2 cabbr_r = vec2(0.0f, 0.0f);
+    vec2 cabbr_g = vec2(0.0f, 0.0f);
+    vec2 cabbr_b = vec2(0.0f, 0.0f);
+#endif
 
     float r = texture(u_atlas, v_t + (cabbr_r / u_vp)).r;
     float g = texture(u_atlas, v_t + (cabbr_g / u_vp)).g;

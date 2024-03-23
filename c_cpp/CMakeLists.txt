@@ -55,11 +55,8 @@ target_link_libraries(md5 PRIVATE common)
 
 # OpenGL demos
 if(HAS_SDL)
-    add_executable(opengl-cube "${CMAKE_CURRENT_LIST_DIR}/opengl-cube.cc")
-    target_link_libraries(opengl-cube PRIVATE common glad33 sdl)
-
-    add_executable(opengl-text "${CMAKE_CURRENT_LIST_DIR}/opengl-text.cc")
-    target_link_libraries(opengl-text PRIVATE common glad33 sdl stb)
+    add_executable(opengl "${CMAKE_CURRENT_LIST_DIR}/opengl.cc")
+    target_link_libraries(opengl PRIVATE common glad33 sdl stb imgui-sdl2 imgui-gl imgui)
 endif()
 
 # Rectangle packing demo
