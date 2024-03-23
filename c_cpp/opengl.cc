@@ -318,12 +318,16 @@ static struct {
     NSVGimage* acid;
     NSVGimage* mozilla;
     NSVGimage* text;
+    NSVGimage* t4012;
 } images = { };
 
 static void init() {
     GLCHECK(glDisable(GL_DEPTH_TEST));
     GLCHECK(glEnable(GL_MULTISAMPLE));
     GLCHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+
+    GLCHECK(glEnable(GL_BLEND));
+    GLCHECK(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
     prog = compile_gl_program("opengl-curve-vert.glsl", "opengl-curve-frag.glsl");
 
@@ -346,6 +350,7 @@ static void init() {
         { &images.acid, "data/acid.svg" },
         { &images.mozilla, "data/mozilla.svg" },
         { &images.text, "data/text.svg" },
+        { &images.t4012, "data/4012.svg" },
     };
     for (usize i = 0; i < arrlen(image_sources); ++i) {
         if (!(*image_sources[i].image = nsvgParseFromFile(image_sources[i].path, "px", 96.0f))) {
@@ -386,7 +391,19 @@ static void draw_bezier(const Vec2 p[4], Vec4 color) {
     }
 }
 
-static void draw_svg(NSVGimage* image, Vec2 pos, Vec2 scale = Vec2(1.0f, 1.0f), Vec4 color = Vec4(1.0f, 0.67f, 0.27f, 1.0f)) {
+static void draw_svg(NSVGimage* image, Vec2 pos, Vec2 scale = Vec2(1.0f, 1.0f), usize slow = 1, Vec4 color = Vec4(0.2f, 1.0f, 0.2f, 1.0f)) {
+    usize total_points = 0;
+    for (NSVGshape* shape = image->shapes; shape; shape = shape->next) {
+        for (NSVGpath* path = shape->paths; path; path = path->next) {
+            total_points += path->npts;
+        }
+    }
+
+    usize points_per_second = 5;
+
+    usize max_points = (SDL_GetTicks() / (points_per_second * slow)) % total_points;
+
+    usize points = 0;
     for (NSVGshape* shape = image->shapes; shape; shape = shape->next) {
         for (NSVGpath* path = shape->paths; path; path = path->next) {
             for (i32 i = 0; i < path->npts - 1; i += 3) {
@@ -398,8 +415,15 @@ static void draw_svg(NSVGimage* image, Vec2 pos, Vec2 scale = Vec2(1.0f, 1.0f), 
                     pos + Vec2(p[6], p[7]) * scale
                 };
 
+                if ((points += 3) >= max_points) {
+                    draw_line(pos, pts[3], Vec4(0.2f, 1.0f, 0.2f, 0.2f));
+                    return;
+                }
+
                 // draw_line(pos + p1.scale(scale), pos + p4.scale(scale), Vec4(1.0f, 1.0f, 0.0f));
-                draw_bezier(pts, color);
+
+                // f32 fac = 
+                draw_bezier(pts, (max_points - points) / 3 > 5 ? color : Vec4(0.7f, 1.0f, 0.7f, 1.0f));
             }
         }
     }
@@ -419,19 +443,20 @@ static void frame(const AppInfo* app) {
     GLCHECK(glUseProgram(prog));
     GLCHECK(glUniformMatrix4fv(glGetUniformLocation(prog, "u_proj"), 1, GL_FALSE, proj.base()))
 
-    draw_line(Vec2(100, 100), Vec2(200, 200));
+    // draw_line(Vec2(100, 100), Vec2(200, 200));
 
-    // sine
-    for (f32 x = 400.0f; x < 1000.0f; x += sine_step) {
-        Vec2 p1 = Vec2(x, 200.0f + sinf((x / 20.0f)) * 50.0f);
-        Vec2 p2 = Vec2(x + sine_step, 200.0f + sinf((x + sine_step) / 20.0f) * 50.0f);
-        draw_line(p1, p2);
-    }
+    // // sine
+    // for (f32 x = 400.0f; x < 1000.0f; x += sine_step) {
+    //     Vec2 p1 = Vec2(x, 200.0f + sinf((x / 20.0f)) * 50.0f);
+    //     Vec2 p2 = Vec2(x + sine_step, 200.0f + sinf((x + sine_step) / 20.0f) * 50.0f);
+    //     draw_line(p1, p2);
+    // }
 
     Vec2 scale = app->vp / Vec2(1280.0f, 720.0f);
     draw_svg(images.acid, Vec2(500.0f, 400.0f) * scale, scale * Vec2(2.0f, 2.0f));
     draw_svg(images.mozilla, Vec2(800.0f, 400.0f) * scale, scale * Vec2(2.0f, 2.0f));
-    draw_svg(images.text, Vec2(15.0f, 300.0f) * scale, scale * Vec2(2.0f, 2.0f));
+    draw_svg(images.text, Vec2(15.0f, 200.0f) * scale, scale * Vec2(2.0f, 2.0f));
+    draw_svg(images.t4012, Vec2(15.0f, 300.0f) * scale, scale * Vec2(2.0f, 2.0f), 2);
 }
 
 static void ui() {
@@ -442,7 +467,7 @@ static void ui() {
     // }
 
     ImGui::SliderFloat("Sine wave step", &sine_step, 1.0f, 50.0f);
-    ImGui::SliderFloat("Bezier samples", &bezier_samples, 1.0f, 10.0f);
+    ImGui::SliderFloat("Bezier samples", &bezier_samples, 1.0f, 25.0f);
     ImGui::Text("Segments: %u", draws);
 }
 
