@@ -327,6 +327,9 @@ static GLuint tex;
 static GLuint fbo;
 static GLuint fbo_tex;
 
+static u32 num_chars = 0;
+static u32 num_draws = 0;
+
 static void draw_text(Vec2 pos, const char* text, bool flush = false) {
     bool flush_now = flush;
     const char* leftover = nullptr; // text left over after flush
@@ -334,6 +337,8 @@ static void draw_text(Vec2 pos, const char* text, bool flush = false) {
         if ((u8)text[i] < ASCII_START || (u8)text[i] > ASCII_END) {
             continue;
         }
+
+        ++num_chars;
 
         stbtt_aligned_quad q = { };
         stbtt_GetBakedQuad(glyphs, 512, 512, (u8)text[i] - ASCII_START, &pos.x, &pos.y, &q, 1);
@@ -359,6 +364,7 @@ static void draw_text(Vec2 pos, const char* text, bool flush = false) {
         GLCHECK(glBindBuffer(GL_ARRAY_BUFFER, r.vbo));
         GLCHECK(glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertex) * r.head * 4, r.batch));
         GLCHECK(glDrawElements(GL_TRIANGLES, r.head * 6, GL_UNSIGNED_INT, nullptr));
+        ++num_draws;
         r.head = 0;
     }
 
@@ -435,6 +441,8 @@ static void init() {
 }
 
 static void frame(const AppInfo* app) {
+    num_chars = 0; num_draws = 0;
+
 	GLCHECK(glBindFramebuffer(GL_FRAMEBUFFER, fbo));
 
 	// Update framebuffer texture
@@ -490,7 +498,7 @@ static void frame(const AppInfo* app) {
 
 	const char* animdemo = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas mollis vitae diam vitae cursus. ";
 	char tmp[512] = { };
-	strncpy(tmp, animdemo, (SDL_GetTicks() / 50) % strlen(animdemo));
+	strncpy(tmp, animdemo, (SDL_GetTicks() / 100) % strlen(animdemo));
 	push_text(tmp);
 
 	char loaddemo[64] = { };
@@ -513,6 +521,19 @@ static void frame(const AppInfo* app) {
 	draw_text(Vec2((sin(now) / 4.0f + 0.5f) * app->vp.x, (cos(now) / 4.0f + 0.5f) * app->vp.y), "WOW!");
 
 	draw_text(Vec2(), nullptr, true);
+
+    push_text("Random stuff:");
+    const u32 rows = 8;
+    const u32 cols = 64;
+    RandomXOR r = RandomXOR();
+    const u32 t = (SDL_GetTicks() / 10) % (rows * cols);
+    for (u32 i = 0; i < (t / cols) + 1; ++i) {
+        char buf[128] = { };
+        for (u32 j = 0; j < min(cols, t - (i * cols)); ++j) {
+            buf[j] = r.random<char>(' ', '~');
+        }
+        push_text(buf);
+    }
 
 	// Draw post-processing
 	GLCHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
@@ -537,7 +558,8 @@ static void frame(const AppInfo* app) {
 }
 
 static void ui() {
-
+    ImGui::Text("# chars: %u", num_chars);
+    ImGui::Text("# draws: %u", num_draws);
 }
 
 REGISTER_DEMO("Text", init, frame, ui);
