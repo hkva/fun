@@ -523,8 +523,8 @@ static void frame(const AppInfo* app) {
 	draw_text(Vec2(), nullptr, true);
 
     push_text("Random stuff:");
-    const u32 rows = 8;
-    const u32 cols = 64;
+    const u32 rows = 12;
+    const u32 cols = 75;
     RandomXOR r = RandomXOR();
     const u32 t = (SDL_GetTicks() / 10) % (rows * cols);
     for (u32 i = 0; i < (t / cols) + 1; ++i) {
@@ -559,7 +559,7 @@ static void frame(const AppInfo* app) {
 
 static void ui() {
     ImGui::Text("# chars: %u", num_chars);
-    ImGui::Text("# draws: %u", num_draws);
+    ImGui::Text("# draws: %u (%u / %u)", num_draws, num_chars, (u32)BATCH_SIZE);
 }
 
 REGISTER_DEMO("Text", init, frame, ui);
