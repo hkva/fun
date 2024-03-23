@@ -417,7 +417,7 @@ static void init() {
 
     std::vector<u8> ttf = load_binary_file("data/BerkeleyMono-Regular.ttf");
     if (ttf.empty()) {
-       std::vector<u8> ttf = load_binary_file("data/sourcecodepro.ttf");
+       ttf = load_binary_file("data/sourcecodepro.ttf");
         if (ttf.empty()) {
             dbgerr("Failed to load TTF");
         } 
@@ -567,6 +567,10 @@ static void frame(const AppInfo* app) {
 static void ui() {
     ImGui::Text("# chars: %u", num_chars);
     ImGui::Text("# draws: %u (%u / %u)", num_draws, num_chars, (u32)BATCH_SIZE);
+    float dpi = 0.0f; SDL_GetDisplayDPI(0, &dpi, nullptr, nullptr);
+    ImGui::Text("DPI: %f", dpi);
+    ImGui::Text("DPI / 96.0f: %f", dpi / 96.0f);
+    ImGui::Text("DPI / 72.0f: %f", dpi / 72.0f);
 }
 
 REGISTER_DEMO("Text", init, frame, ui);
