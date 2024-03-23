@@ -518,12 +518,19 @@ static void frame(const AppInfo* app) {
 	}
 	push_text(loaddemo);
 
-	draw_text(Vec2((sin(now) / 4.0f + 0.5f) * app->vp.x, (cos(now) / 4.0f + 0.5f) * app->vp.y), "WOW!");
+    const char* helloworld = "ASCII STANDS FOR AMERICAN STANDARD CODE FOR INFORMATION INTERCHANGE";
+    for (usize i = 0; helloworld[i] != '\0'; ++i) {
+        char text[2] = { helloworld[i], '\0' };
+        f32 off = (f32)i / 15.0f;
+        draw_text(Vec2((sin(now - off) / 4.0f + 0.5f) * app->vp.x, (cos(now - off) / 4.0f + 0.5f) * app->vp.y), text);
+    }
+
+	// draw_text(Vec2((sin(now) / 4.0f + 0.5f) * app->vp.x, (cos(now) / 4.0f + 0.5f) * app->vp.y), "WOW!");
 
 	draw_text(Vec2(), nullptr, true);
 
     push_text("Random stuff:");
-    const u32 rows = 12;
+    const u32 rows = 11;
     const u32 cols = 75;
     RandomXOR r = RandomXOR();
     const u32 t = (SDL_GetTicks() / 10) % (rows * cols);
