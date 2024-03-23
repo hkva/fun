@@ -386,16 +386,16 @@ static void draw_bezier(const Vec2 p[4], Vec4 color) {
     }
 }
 
-static void draw_svg(NSVGimage* image, Vec2 pos, f32 scale = 1.0f, Vec4 color = Vec4(0.0f, 1.0f, 0.0f, 1.0f)) {
+static void draw_svg(NSVGimage* image, Vec2 pos, Vec2 scale = Vec2(1.0f, 1.0f), Vec4 color = Vec4(1.0f, 0.67f, 0.27f, 1.0f)) {
     for (NSVGshape* shape = image->shapes; shape; shape = shape->next) {
         for (NSVGpath* path = shape->paths; path; path = path->next) {
             for (i32 i = 0; i < path->npts - 1; i += 3) {
                 f32* p = &path->pts[i*2];
                 const Vec2 pts[] = {
-                    pos + Vec2(p[0], p[1]).scale(scale),
-                    pos + Vec2(p[2], p[3]).scale(scale),
-                    pos + Vec2(p[4], p[5]).scale(scale),
-                    pos + Vec2(p[6], p[7]).scale(scale)
+                    pos + Vec2(p[0], p[1]) * scale,
+                    pos + Vec2(p[2], p[3]) * scale,
+                    pos + Vec2(p[4], p[5]) * scale,
+                    pos + Vec2(p[6], p[7]) * scale
                 };
 
                 // draw_line(pos + p1.scale(scale), pos + p4.scale(scale), Vec4(1.0f, 1.0f, 0.0f));
@@ -408,7 +408,7 @@ static void draw_svg(NSVGimage* image, Vec2 pos, f32 scale = 1.0f, Vec4 color = 
 static void frame(const AppInfo* app) {
     draws = 0;
 
-    glLineWidth(1.0f);
+    glLineWidth(2.0f);
 
     GLCHECK(glClearColor(0.1f, 0.1f, 0.1f, 1.0f));
     GLCHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
@@ -428,9 +428,10 @@ static void frame(const AppInfo* app) {
         draw_line(p1, p2);
     }
 
-    draw_svg(images.acid, Vec2(500.0f, 400.0f), 2.0f);
-    draw_svg(images.mozilla, Vec2(800.0f, 400.0f), 2.0f);
-    draw_svg(images.text, Vec2(15.0f, 300.0f), 2.0f);
+    Vec2 scale = app->vp / Vec2(1280.0f, 720.0f);
+    draw_svg(images.acid, Vec2(500.0f, 400.0f) * scale, scale * Vec2(2.0f, 2.0f));
+    draw_svg(images.mozilla, Vec2(800.0f, 400.0f) * scale, scale * Vec2(2.0f, 2.0f));
+    draw_svg(images.text, Vec2(15.0f, 300.0f) * scale, scale * Vec2(2.0f, 2.0f));
 }
 
 static void ui() {
@@ -745,17 +746,19 @@ int main(int argc, const char* argv[]) {
         dbgerr("Failed to initialize SDL: %s", SDL_GetError());
     }
 
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+
     const u32 wndflags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
     SDL_Window* wnd = SDL_CreateWindow("OpenGL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, wndflags);
     if (!wnd) {
         dbgerr("Failed to create SDL window: %s", SDL_GetError());
     }
 
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 2);
+    
     SDL_GLContext gl = SDL_GL_CreateContext(wnd);
     if (!gl) {
         dbgerr("Failed to create OpenGL context: %s", SDL_GetError());
@@ -858,7 +861,7 @@ int main(int argc, const char* argv[]) {
         		ImGui::EndCombo();
         	}
 
-        	window_hovered = ImGui::IsWindowHovered() || ImGui::IsAnyItemActive();
+        	window_hovered = ImGui::IsWindowHovered() || ImGui::IsAnyItemActive() || ImGui::IsAnyItemHovered();
         	if (window_hovered) {
         		Demo::get_demos()[selected_demo]->ui();
         	}
