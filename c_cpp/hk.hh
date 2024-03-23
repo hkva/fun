@@ -63,13 +63,18 @@ static inline T rotate_left(T inp, usize shift) {
 }
 
 template <typename T>
-static inline T min(T x1, T x2) {
+static inline constexpr T min(T x1, T x2) {
     return (x1 > x2) ? x2 : x1;
 }
 
 template <typename T>
-static inline T max(T x1, T x2) {
+static inline constexpr T max(T x1, T x2) {
     return (x1 > x2) ? x1 : x2;
+}
+
+template <typename T>
+static inline constexpr bool inrange(T val, T lower, T upper) {
+    return val >= lower && val <= upper;
 }
 
 // ==============================
@@ -121,6 +126,10 @@ public:
     Vec2 operator-(const Vec2& rhs) const {
         return Vec2(x - rhs.x, y - rhs.y);
     }
+
+    Vec2 scale(f32 scale) const {
+        return Vec2(x * scale, y * scale);
+    }
 };
 
 class Vec3 {
@@ -148,6 +157,29 @@ public:
 public:
     static inline Vec3 broadcast(f32 val) {
         return Vec3(val, val, val);
+    }
+};
+
+class Vec4 {
+public:
+union {
+struct {
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 w;
+};
+struct {
+    f32 r;
+    f32 g;
+    f32 b;
+    f32 a;
+};
+};
+public:
+    Vec4() = default;
+
+    Vec4(f32 x, f32 y, f32 z, f32 w = 1.0f) : x(x), y(y), z(z), w(w) {
     }
 };
 
@@ -268,6 +300,30 @@ public:
         return result;
     }
 };
+
+// ==============================
+// String utilities
+// ==============================
+
+namespace str {
+
+static inline char tolower(char c) {
+    return inrange(c, 'A', 'Z') ? (c + ('a' - 'A')) : c;
+}
+
+static inline bool ieq(const char* s1, const char* s2) {
+    for (usize i = 0; ; ++i) {
+        if (tolower(s1[i]) != tolower(s2[i])) {
+            return false;
+        }
+        if (s1[i] == '\0') {
+            break;
+        }
+    }
+    return true;
+}
+
+}
 
 // ==============================
 // RNG

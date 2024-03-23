@@ -12,6 +12,15 @@ target_include_directories(imgui PUBLIC
 )
 target_compile_features(imgui PUBLIC cxx_std_17)
 
+# NanoSVG
+# https://github.com/memononen/nanosvg
+add_library(nanosvg
+    "${CMAKE_CURRENT_LIST_DIR}/nanosvg/nanosvg_impl.c"
+)
+target_include_directories(nanosvg PUBLIC
+    "${CMAKE_CURRENT_LIST_DIR}/nanosvg"
+)
+
 # SDL
 # https://www.libsdl.org/
 add_library(sdl INTERFACE)

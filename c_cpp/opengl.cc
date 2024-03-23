@@ -14,6 +14,8 @@
 
 #include "stb_truetype.h"
 
+#include "nanosvg.h"
+
 //
 // Utility functions
 //
@@ -288,6 +290,162 @@ static void ui() {
 }
 
 REGISTER_DEMO("Cube", init, frame, ui);
+
+}
+
+//
+// Demo: Curves
+//
+
+namespace lines {
+
+struct Vertex {
+    Vec2 p;
+    Vec4 c;
+};
+
+static GLuint vao;
+static GLuint vbo;
+
+static GLuint prog;
+
+static f32 sine_step = 3.0f;
+static f32 bezier_samples = 5.0f;
+
+static u32 draws = 0;
+
+static struct {
+    NSVGimage* acid;
+    NSVGimage* mozilla;
+    NSVGimage* text;
+} images = { };
+
+static void init() {
+    GLCHECK(glDisable(GL_DEPTH_TEST));
+    GLCHECK(glEnable(GL_MULTISAMPLE));
+    GLCHECK(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+
+    prog = compile_gl_program("opengl-curve-vert.glsl", "opengl-curve-frag.glsl");
+
+    GLCHECK(glGenVertexArrays(1, &vao));
+    GLCHECK(glBindVertexArray(vao));
+
+    GLCHECK(glGenBuffers(1, &vbo));
+    GLCHECK(glBindBuffer(GL_ARRAY_BUFFER, vbo));
+    GLCHECK(glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * 2, nullptr, GL_STREAM_DRAW));
+
+    GLCHECK(glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, p)));
+    GLCHECK(glEnableVertexAttribArray(0));
+    GLCHECK(glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, c)));
+    GLCHECK(glEnableVertexAttribArray(1));
+
+    static struct {
+        NSVGimage** image;
+        const char* path;
+    } image_sources[] = {
+        { &images.acid, "data/acid.svg" },
+        { &images.mozilla, "data/mozilla.svg" },
+        { &images.text, "data/text.svg" },
+    };
+    for (usize i = 0; i < arrlen(image_sources); ++i) {
+        if (!(*image_sources[i].image = nsvgParseFromFile(image_sources[i].path, "px", 96.0f))) {
+            dbgerr("Failed to load SVG image %s", image_sources[i].path);
+        }
+        dbglog("Parsed %s", image_sources[i].path);
+    }
+}
+
+static void draw_line(Vec2 p1, Vec2 p2, Vec4 color = Vec4(1.0f, 1.0f, 1.0f)) {
+    // @@ batching
+    Vertex line[2] = {
+        { p1, color },
+        { p2, color },
+    };
+    GLCHECK(glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(line), line));
+    GLCHECK(glDrawArrays(GL_LINES, 0, 2));
+    ++draws;
+}
+
+static Vec2 sample_bezier(const Vec2 p[4], float t) {
+    auto pow2 = [](float f) { return f * f; };
+    auto pow3 = [](float f) { return f * f * f; };
+
+    return
+        p[0].scale(pow3(1.0f - t)) +
+        p[1].scale(3.0f * pow2(1.0f - t) * t) +
+        p[2].scale(3.0f * (1.0f - t) * pow2(t)) +
+        p[3].scale(pow3(t));
+}
+
+static void draw_bezier(const Vec2 p[4], Vec4 color) {
+    const f32 step = (1.0f / bezier_samples);
+    for (f32 i = 0; i < 1.0f; i += step) {
+        const Vec2 p1 = sample_bezier(p, i);
+        const Vec2 p2 = sample_bezier(p, i + min(step, 1.0f - i));
+        draw_line(p1, p2, color);
+    }
+}
+
+static void draw_svg(NSVGimage* image, Vec2 pos, f32 scale = 1.0f, Vec4 color = Vec4(0.0f, 1.0f, 0.0f, 1.0f)) {
+    for (NSVGshape* shape = image->shapes; shape; shape = shape->next) {
+        for (NSVGpath* path = shape->paths; path; path = path->next) {
+            for (i32 i = 0; i < path->npts - 1; i += 3) {
+                f32* p = &path->pts[i*2];
+                const Vec2 pts[] = {
+                    pos + Vec2(p[0], p[1]).scale(scale),
+                    pos + Vec2(p[2], p[3]).scale(scale),
+                    pos + Vec2(p[4], p[5]).scale(scale),
+                    pos + Vec2(p[6], p[7]).scale(scale)
+                };
+
+                // draw_line(pos + p1.scale(scale), pos + p4.scale(scale), Vec4(1.0f, 1.0f, 0.0f));
+                draw_bezier(pts, color);
+            }
+        }
+    }
+}
+
+static void frame(const AppInfo* app) {
+    draws = 0;
+
+    glLineWidth(1.0f);
+
+    GLCHECK(glClearColor(0.1f, 0.1f, 0.1f, 1.0f));
+    GLCHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+    GLCHECK(glViewport(0, 0, app->vp.x, app->vp.y));
+
+    const Mat4 proj = Mat4::orthographic(0.1f, 2.0f, 0.0f, app->vp.x, 0.0f, app->vp.y);
+
+    GLCHECK(glUseProgram(prog));
+    GLCHECK(glUniformMatrix4fv(glGetUniformLocation(prog, "u_proj"), 1, GL_FALSE, proj.base()))
+
+    draw_line(Vec2(100, 100), Vec2(200, 200));
+
+    // sine
+    for (f32 x = 400.0f; x < 1000.0f; x += sine_step) {
+        Vec2 p1 = Vec2(x, 200.0f + sinf((x / 20.0f)) * 50.0f);
+        Vec2 p2 = Vec2(x + sine_step, 200.0f + sinf((x + sine_step) / 20.0f) * 50.0f);
+        draw_line(p1, p2);
+    }
+
+    draw_svg(images.acid, Vec2(500.0f, 400.0f), 2.0f);
+    draw_svg(images.mozilla, Vec2(800.0f, 400.0f), 2.0f);
+    draw_svg(images.text, Vec2(15.0f, 300.0f), 2.0f);
+}
+
+static void ui() {
+    // static bool draw_lines = false;
+    // if (ImGui::Checkbox("Wireframe", &draw_lines)) {
+    //     dbglog("clicked");
+    //     glPolygonMode(GL_FRONT_AND_BACK, (draw_lines) ? GL_LINE : GL_FILL);
+    // }
+
+    ImGui::SliderFloat("Sine wave step", &sine_step, 1.0f, 50.0f);
+    ImGui::SliderFloat("Bezier samples", &bezier_samples, 1.0f, 10.0f);
+    ImGui::Text("Segments: %u", draws);
+}
+
+REGISTER_DEMO("Lines", init, frame, ui);
 
 }
 
@@ -623,6 +781,14 @@ int main(int argc, const char* argv[]) {
     static usize selected_demo = 0;
     static usize last_selected_demo = (usize)-1;
 
+    if (argc >= 2) {
+        for (usize i = 0; i < Demo::get_demos().size(); ++i) {
+            if (str::ieq(Demo::get_demos()[i]->name, argv[1])) {
+                selected_demo = i;
+            }
+        }
+    }
+
     SDL_ShowWindow(wnd);
     bool wants_quit = false;
     do {
@@ -677,7 +843,7 @@ int main(int argc, const char* argv[]) {
         if (window_hovered) {
         	ImGui::SetNextWindowSize(ImVec2(300.0f, vp.y - 30.0f));
         } else {
-        	ImGui::SetNextWindowSize(ImVec2(300.0f, 55.0f));
+        	ImGui::SetNextWindowSize(ImVec2(300.0f, 37.0f));
         }
         if (ImGui::Begin("OpenGL", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize)) {
         	if (ImGui::BeginCombo("##demo", Demo::get_demos()[selected_demo]->name)) {
@@ -692,10 +858,7 @@ int main(int argc, const char* argv[]) {
         		ImGui::EndCombo();
         	}
 
-        	window_hovered = ImGui::IsWindowHovered();
-        	if (!window_hovered) {
-        		ImGui::Text("Hover for details");
-        	}
+        	window_hovered = ImGui::IsWindowHovered() || ImGui::IsAnyItemActive();
         	if (window_hovered) {
         		Demo::get_demos()[selected_demo]->ui();
         	}

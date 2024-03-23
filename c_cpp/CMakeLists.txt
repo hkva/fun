@@ -56,7 +56,7 @@ target_link_libraries(md5 PRIVATE common)
 # OpenGL demos
 if(HAS_SDL)
     add_executable(opengl "${CMAKE_CURRENT_LIST_DIR}/opengl.cc")
-    target_link_libraries(opengl PRIVATE common glad33 sdl stb imgui-sdl2 imgui-gl imgui)
+    target_link_libraries(opengl PRIVATE common glad33 sdl stb imgui-sdl2 imgui-gl imgui nanosvg)
 endif()
 
 # Rectangle packing demo
