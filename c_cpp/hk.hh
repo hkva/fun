@@ -109,6 +109,14 @@ static inline f32 deg2rad(const f32 rad) {
     return rad * PI / 180.0f;   
 }
 
+static inline constexpr f32 pow2(f32 v) {
+    return v * v;
+}
+
+static inline constexpr f32 pow3(f32 v) {
+    return v * v * v;
+}
+
 class Vec2 {
 public:
     f32 x;

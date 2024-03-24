@@ -675,9 +675,6 @@ static void draw_line(Vec2 p1, Vec2 p2, Vec4 color = Vec4(1.0f, 1.0f, 1.0f)) {
 }
 
 static Vec2 sample_bezier(const Vec2 p[4], float t) {
-    auto pow2 = [](float f) { return f * f; };
-    auto pow3 = [](float f) { return f * f * f; };
-
     return
         p[0].scale(pow3(1.0f - t)) +
         p[1].scale(3.0f * pow2(1.0f - t) * t) +
@@ -798,7 +795,7 @@ int main(int argc, const char* argv[]) {
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 
-    const u32 wndflags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL;
+    const u32 wndflags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI;
     SDL_Window* wnd = SDL_CreateWindow("OpenGL", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, wndflags);
     if (!wnd) {
         dbgerr("Failed to create SDL window: %s", SDL_GetError());
