@@ -54,9 +54,16 @@ add_executable(md5 "${CMAKE_CURRENT_LIST_DIR}/md5.cc")
 target_link_libraries(md5 PRIVATE common)
 
 # OpenGL demos
-if(HAS_SDL)
-    add_executable(opengl "${CMAKE_CURRENT_LIST_DIR}/opengl.cc")
-    target_link_libraries(opengl PRIVATE common glad33 sdl stb imgui-sdl2 imgui-gl imgui nanosvg)
+if(HAS_SDL AND HAS_OPENGL)
+    add_library(opengl INTERFACE)
+    target_link_libraries(opengl INTERFACE glad43 sdl stb imgui-sdl2 imgui-gl imgui)
+
+    add_executable(opengl-cube "${CMAKE_CURRENT_LIST_DIR}/opengl-cube.cc")
+    target_link_libraries(opengl-cube PRIVATE common opengl)
+    add_executable(opengl-text "${CMAKE_CURRENT_LIST_DIR}/opengl-text.cc")
+    target_link_libraries(opengl-text PRIVATE common opengl)
+    add_executable(opengl-vector "${CMAKE_CURRENT_LIST_DIR}/opengl-vector.cc")
+    target_link_libraries(opengl-vector PRIVATE common opengl nanosvg)
 endif()
 
 # Rectangle packing demo

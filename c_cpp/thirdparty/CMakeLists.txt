@@ -66,10 +66,13 @@ add_library(stb STATIC
 )
 target_include_directories(stb PUBLIC "${CMAKE_CURRENT_LIST_DIR}/stb")
 
-# glad 3.3
+# glad 4.3
 # https://glad.dav1d.de/
-add_library(glad33 STATIC "${CMAKE_CURRENT_LIST_DIR}/glad33/src/glad.c")
-target_include_directories(glad33 PUBLIC "${CMAKE_CURRENT_LIST_DIR}/glad33/include")
+if(NOT APPLE)
+    add_library(glad43 STATIC "${CMAKE_CURRENT_LIST_DIR}/glad43/src/glad.c")
+    target_include_directories(glad43 PUBLIC "${CMAKE_CURRENT_LIST_DIR}/glad43/include")
+    set(HAS_OPENGL TRUE)
+endif()
 
 # Handmade math
 # https://github.com/HandmadeMath/HandmadeMath

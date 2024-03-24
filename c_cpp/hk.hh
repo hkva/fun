@@ -327,6 +327,14 @@ static inline char tolower(char c) {
     return inrange(c, 'A', 'Z') ? (c + ('a' - 'A')) : c;
 }
 
+static inline usize len(const char* s) {
+    usize len = 0;
+    while (s[len] != '\0') {
+        ++len;
+    }
+    return len;
+}
+
 static inline bool ieq(const char* s1, const char* s2) {
     for (usize i = 0; ; ++i) {
         if (tolower(s1[i]) != tolower(s2[i])) {
@@ -337,6 +345,28 @@ static inline bool ieq(const char* s1, const char* s2) {
         }
     }
     return true;
+}
+
+static inline bool ieq(const char* s1, const char* s2, usize n) {
+    for (usize i = 0; i < n; ++i) {
+        if (tolower(s1[i]) != tolower(s2[i])) {
+            return false;
+        }
+        if (s1[i] == '\0') {
+            break;
+        }
+    }
+    return true;
+}
+
+static inline bool icontains(const char* haystack, const char* needle) {
+    usize needle_len = len(needle);
+    for (usize i = 0; haystack[i] != '\0'; ++i) {
+        if (ieq(&haystack[i], needle, needle_len)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 }
