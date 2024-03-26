@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 #include <string> // @@ replace
 #include <vector> // @@ replace

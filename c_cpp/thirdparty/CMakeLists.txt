@@ -57,7 +57,7 @@ endif()
 add_library(imgui-gl
     "${CMAKE_CURRENT_LIST_DIR}/imgui-1.90.4/backends/imgui_impl_opengl3.cpp"
 )
-target_link_libraries(imgui-gl PRIVATE imgui glad33)
+target_link_libraries(imgui-gl PRIVATE imgui glad43)
 
 # stb
 # https://github.com/nothings/stb
